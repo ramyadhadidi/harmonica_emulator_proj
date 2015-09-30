@@ -26,6 +26,8 @@
 #define WORD_SIZE_IN_BYTE 4
 #define GPR_REG_NUM 8
 #define PRED_REG_NUM 8
+#define SIMD_LANE 8
+#define WARP_SIZE 8
 
 
 #define INST_SIZE_BITS WORD_SIZE_IN_BYTE*8
@@ -34,6 +36,8 @@
 
 #define STEP_PC WORD_SIZE_IN_BYTE
 
+#define MAX_REG_SOURCES 64
+#define MAX_PREG_SOURCES 64
 
 typedef uint8_t  Byte;
 typedef uint64_t Word;
