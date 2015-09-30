@@ -2,12 +2,13 @@
 #define INSTRUCTION_H
 
 #include <iostream>
-#include <math.h>
 #include "globals.h"
 
 using namespace std;
 
 class instruction_c {
+  friend class warp_c;
+
   public:
     enum Opcode { 
       NOP,          DI,           EI, 
