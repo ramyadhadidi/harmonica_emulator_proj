@@ -23,6 +23,7 @@ using namespace std;
 */
 
 bool exe_end = false;
+Addr PC = 0;
 
 int main(int argc, char** argv) {
   if (argc != 3) {
@@ -31,10 +32,14 @@ int main(int argc, char** argv) {
   }
 
   binReader_c bin(argv[1]);
-  while(!exe_end) { 
-    instruction_c(bin.get_inst());
-    //cout << bin.get_inst();
-    //exe_end = true;
+
+  while(!exe_end) {
+    cout << PC << endl;
+    instruction_c(bin.get_inst(PC));
+    //cout << hex << bin.get_inst(PC) << endl;
+    PC += STEP_PC;
+    if (PC>100)
+      exe_end = true;
   }
   return 0;
 }

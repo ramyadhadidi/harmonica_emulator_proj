@@ -20,7 +20,7 @@ class instruction_c {
       SPLIT, JOIN, BAR 
     };
 
-    enum argClass {
+    enum argClassType {
       AC_NONE, AC_2REG, AC_2IMM, AC_3REG, AC_3PREG, AC_3IMM, AC_3REGSRC, 
       AC_1IMM, AC_1REG, AC_3IMMSRC, AC_PREG_REG, AC_2PREG, AC_2REGSRC
     };
@@ -29,6 +29,16 @@ class instruction_c {
         ITYPE_NULL, ITYPE_INTBASIC, ITYPE_INTMUL, ITYPE_INTDIV, ITYPE_STACK, ITYPE_BR, 
         ITYPE_CALL, ITYPE_RET, ITYPE_TRAP, ITYPE_FPBASIC, ITYPE_FPMUL, ITYPE_FPDIV
     };
+
+    static struct instTableEntry {
+      const char *opString;
+      bool controlFlow;
+      bool relAddress;
+      bool allSrcArgs;
+      bool privileged;
+      argClassType argClass;
+      instType iType;
+    } instTable[];
 
   public:
     instruction_c(Word inst);

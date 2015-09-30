@@ -8,7 +8,6 @@
 #include <string>
 #include <sstream>
 #include <vector>
-#include <queue>
 
 #include "globals.h"
 
@@ -21,7 +20,8 @@ using namespace std;
 class binReader_c {
   public:
     binReader_c(string fileName);
-    Word get_inst();
+    Word get_inst(Addr PC);
+    Byte get_byte(Addr addr);
 
   private:
     void read_all();
@@ -29,7 +29,7 @@ class binReader_c {
   private:
     string m_fileName;
     ifstream m_bin;
-    queue<char> binary_stream;
+    vector<Byte> binary_stream;
 };
 
 #endif
