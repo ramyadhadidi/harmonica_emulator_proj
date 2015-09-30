@@ -21,10 +21,19 @@
   # SIMD lane
   # warps
 */
-#define INST_SIZE_BITS 32
 
+
+#define WORD_SIZE_IN_BYTE 4
+#define GPR_REG_NUM 8
 #define PRED_REG_NUM 8
+
+
+#define INST_SIZE_BITS WORD_SIZE_IN_BYTE*8
 #define PRED_REG_BIT (int)log2(PRED_REG_NUM)
+#define GPR_REG_BIT (int)log2(GPR_REG_NUM)
+
+#define STEP_PC WORD_SIZE_IN_BYTE
+
 
 typedef uint8_t  Byte;
 typedef uint64_t Word;

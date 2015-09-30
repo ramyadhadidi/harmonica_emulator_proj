@@ -16,42 +16,42 @@ void binReader_c::read_all() {
   char * memblock;
 
   if (m_bin.is_open()) {
-    memblock = new char [size];
     m_bin.seekg (0, ios::end);
     size = m_bin.tellg();
-    m_bin.seekg (0, ios::beg);
     memblock = new char [size];
+    m_bin.seekg (0, ios::beg);
     m_bin.read (memblock, size);
     m_bin.close();
 
     for (int i=0; i<size; i++)
-      if (memblock[i]!=' ' && memblock[i]!='\n')
-        binary_stream.push(memblock[i]);
+      binary_stream.push_back((Byte)memblock[i]);
   }
   else {
-    cerr << "Unable to open binary File\n";
+    cerr << "Unable to open binary File" << endl;
     exit(1);
   }
 }
 
-Word binReader_c::get_inst() {
-  string inst = "";
-  for (int i=0; i < INST_SIZE_BITS/4; i++) {
-    if (!binary_stream.empty()) { 
-      inst = inst +  binary_stream.front();
-      binary_stream.pop();
-    }
-    else {
-      cerr << "Reach to end of the File\n";
-      exit(1);
-    }
+Word binReader_c::get_inst(Addr PC) {
+  if (PC+WORD_SIZE_IN_BYTE-1 > binary_stream.size()) {
+    cerr << "PC out of memory" << endl;
+    exit(1);
   }
 
-  stringstream ss;
-  ss << hex << inst;
-  Word inst_int;
-  ss >> inst_int;
-  return inst_int;
+  Word output = 0;
+  for (int i=0; i<WORD_SIZE_IN_BYTE; i++)
+    output += binary_stream[PC+i] * pow(256, i);
+
+  return output;
+}
+
+Byte binReader_c::get_byte(Addr addr) {
+  if (addr > binary_stream.size()) {
+    cerr << "Addressing out of memory" << endl;
+    exit(1);
+  }
+
+  return binary_stream[addr];
 }
 
 //////////////////////////////////////////////////////////////////////////
