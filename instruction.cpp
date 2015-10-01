@@ -226,18 +226,28 @@ void instruction_c::execute(warp_c &warp, int threadID) {
         break;
     //Predicate Manipulation
     case ANDP:
+      warp.m_predRF[threadID][m_destPReg] = warp.m_pregRF[threadID][m_srcPReg[0]] & warp.m_pregRF[threadID][m_srcPReg[1]];
+      break;
     case ORP:
+      warp.m_predRF[threadID][m_destPReg] = warp.m_pregRF[threadID][m_srcPReg[0]] | warp.m_pregRF[threadID][m_srcPReg[1]]; 
+      break;
     case XORP:
+      warp.m_predRF[threadID][m_destPReg] = warp.m_pregRF[threadID][m_srcPReg[0]] != warp.m_pregRF[threadID][m_srcPReg[1]];
+      break;
     case NOTP:
+      warp.m_predRF[threadID][m_destPReg] = !warp.m_pregRF[threadID][m_srcPReg[0]];
+      break;
 
-        break;
-        
     //Value Tests
     case RTOP:
+      warp.m_predRF[threadID][m_destPReg] = warp.m_regRF[threadID][m_srcReg[0]];
+      break; 
     case ISNEG:
+      warp.m_predRF[threadID][m_destPReg] = (1ll << (WORD_SIZE_IN_BITS-1)) & warp.m_regRF[threadID][m_srcReg[0]];
+      break;
     case ISZERO:
-
-        break;
+      warp.m_predRF[threadID][m_destPReg] != warp.m_regRF[threadID][m_srcReg[0]];
+      break;
 
     //Imm Arith/Logic
     case ADDI:
@@ -342,6 +352,7 @@ void instruction_c::execute(warp_c &warp, int threadID) {
     case JALR:
       
       break;
+
     //SIMD Control
     case CLONE:
     case JALIS:
