@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include "globals.h"
+#include "warp.h"
 
 using namespace std;
 
@@ -68,6 +69,8 @@ class instruction_c {
 
   public:
     instruction_c(Word inst);
+
+    void execute(warp_c &warp, int threadID);
 
   private:
     bool m_predicated;

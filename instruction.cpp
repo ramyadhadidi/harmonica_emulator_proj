@@ -189,3 +189,118 @@ instruction_c::instruction_c(Word inst) :
   DEBUG_PRINT("immSrc: " << hex << m_srcImm << dec);
   DEBUG_PRINT("\n");
 }
+
+void instruction_c::execute(warp_c &warp, int threadID) {
+  //Check for Predicate
+
+
+  switch(m_op) {
+    //Trivial
+    case NOP: 
+      break;
+    //Privileged
+    case DI:
+    case EI:
+    case SKEP:
+    case TLBADD:
+    case TLBRM:
+    case TLBFLUSH:
+    case JMPRU:
+    case RETI:
+    case HALT:
+      cout << "Unsupported instruction in this version " << instTable[m_op].opString << endl;
+      break;
+
+    //Memory
+    case ST:
+    case LD:
+      
+        break;
+    //Predicate Manipulation
+    case ANDP:
+    case ORP:
+    case XORP:
+    case NOTP:
+
+        break;
+    //Value Tests
+    case RTOP:
+    case ISNEG:
+    case ISZERO:
+
+        break;
+    //Imm Arith/Logic
+    case LDI:
+    case ADDI:
+    case SUBI:
+    case MULI:
+    case DIVI:
+    case MODI:
+    case SHRI:
+    case SHLI:
+    case ANDI:
+    case ORI: 
+    case XORI:
+
+        break;
+    //Reg Arith/Logic
+    case ADD:
+    case SUB:
+    case MUL:
+    case DIV:
+    case SHL:
+    case SHR:
+    case MOD:
+    case AND:
+    case OR:
+    case XOR:
+    case NEG:
+    case NOT:
+
+        break;
+    //Floating Point
+    case ITOF:
+    case FTOI:
+    case FNEG:
+    case FADD:
+    case FSUB:
+    case FMUL: 
+    case FDIV:
+      cout << "Unsupported instruction in this version " << instTable[m_op].opString << endl;
+      break;
+
+    //Contorl Flow
+    case JMPI:
+    case JMPR:
+    case JALI:
+    case JALR:
+      
+      break;
+    //SIMD Control
+    case CLONE:
+    case JALIS:
+    case JALRS:
+    case JMPRT:
+    case SPLIT:
+    case JOIN:
+      cout << "Unsupported instruction in this version " << instTable[m_op].opString << endl;
+      break;
+
+    //Warp Control
+    case WSPAWN:
+    case BAR:
+      cout << "Unsupported instruction in this version " << instTable[m_op].opString << endl;
+      break;
+    
+    //User/Ker Interaction
+    case TRAP:
+      cout << "Unsupported instruction in this version " << instTable[m_op].opString << endl;
+      break;
+    
+    default:
+      cerr << "Unsupported instruction opcode: 0x" << hex << m_op << dec << endl;
+      exit(1);
+  }
+
+  //Update PC
+}

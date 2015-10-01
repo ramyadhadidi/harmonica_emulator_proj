@@ -4,12 +4,22 @@
 // Binary Reader
 //////////////////////////////////////////////////////////////////////////
 
-binReader_c::binReader_c(string  fileName) : 
+binReader_c::binReader_c() : 
+   m_fileName("") {}
+
+binReader_c::binReader_c(string fileName) : 
    m_fileName(fileName) {
     m_bin.open(m_fileName.c_str(), ios::in|ios::binary);
 
     read_all();
   }
+
+void binReader_c::set_filename(string fileName) {
+  m_fileName = fileName;
+  m_bin.open(m_fileName.c_str(), ios::in|ios::binary);
+
+  read_all();
+}
 
 void binReader_c::read_all() {
   streampos size;
