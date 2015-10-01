@@ -10,7 +10,7 @@
     if (DEBUG) \
     cout << X << endl; 
 
-#define DEBUG 0
+#define DEBUG 1
 
 /* 4w8/8/1/1 to 8w/64/64/64/64 */
 /*
@@ -27,17 +27,18 @@
 #define GPR_REG_NUM 8
 #define PRED_REG_NUM 8
 #define SIMD_LANE_NUM 8
-#define WARP_SIZE 1
+#define WARP_SIZE 8
 
 
+#define WORD_SIZE_IN_BITS WORD_SIZE_IN_BYTE*8
 #define INST_SIZE_BITS WORD_SIZE_IN_BYTE*8
 #define PRED_REG_BIT (int)log2(PRED_REG_NUM)
 #define GPR_REG_BIT (int)log2(GPR_REG_NUM)
 
 #define STEP_PC WORD_SIZE_IN_BYTE
 
-#define MAX_REG_SOURCES 64
-#define MAX_PREG_SOURCES 64
+#define MAX_REG_SOURCES 3
+#define MAX_PREG_SOURCES 3
 
 typedef uint8_t  Byte;
 typedef uint64_t Word;

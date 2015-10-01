@@ -2,6 +2,7 @@
 #define WARP_H
 
 #include <iostream>
+#include <vector>
 #include "globals.h"
 #include "util.h"
 
@@ -24,8 +25,8 @@ class warp_c {
     Addr m_pc[WARP_SIZE];
     Addr m_next_pc[WARP_SIZE];
 
-    Word m_reg[WARP_SIZE][GPR_REG_NUM];
-    bool m_pred[WARP_SIZE][PRED_REG_NUM];
+    Word m_regRF[WARP_SIZE][GPR_REG_NUM];
+    bool m_predRF[WARP_SIZE][PRED_REG_NUM];
 };
 
 #endif

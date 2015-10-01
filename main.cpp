@@ -22,14 +22,14 @@ using namespace std;
   # warps
 */
 
+bool exec_finish = false;
+
 int main(int argc, char** argv) {
   if (argc != 3) {
     cerr << "Usage: ./harp_emulator program output_generated\n" ;
     exit(1);
   }
   string binary_filename = argv[1];
-
-  bool exec_finish = false;
 
   core_c core(binary_filename);
 
