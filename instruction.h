@@ -70,7 +70,7 @@ class instruction_c {
   public:
     instruction_c(Word inst);
 
-    void execute(warp_c &warp, int threadID);
+    void execute(warp_c &warp, unsigned int threadID);
 
   private:
     bool m_predicated;
@@ -96,7 +96,9 @@ class instruction_c {
     void setDestPReg(RegNum destPReg) { m_destPReg = destPReg; }
     void setSrcReg(RegNum srcReg) { m_srcReg[m_nRsrc++] = srcReg; }
     void setSrcPReg(RegNum srcPReg) { m_srcPReg[m_nPsrc++] = srcPReg; }
-    void setImmSrc(RegNum srcImm) { m_immsrcPresent = true; m_srcImm = srcImm; }
+    void setImmSrc(Word srcImm) { m_immsrcPresent = true; m_srcImm = srcImm; }
+
+    Word signExt(Word s, Word last_bit);
 };
 
 #endif
