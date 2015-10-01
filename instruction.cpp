@@ -192,12 +192,16 @@ instruction_c::instruction_c(Word inst) :
 
 void instruction_c::execute(warp_c &warp, int threadID) {
   //Check for Predicate
+  if (m_predicated)
+    if(!warp.m_predRF[threadID][m_predReg])
+      return;
 
 
   switch(m_op) {
     //Trivial
     case NOP: 
       break;
+
     //Privileged
     case DI:
     case EI:
@@ -207,8 +211,12 @@ void instruction_c::execute(warp_c &warp, int threadID) {
     case TLBFLUSH:
     case JMPRU:
     case RETI:
-    case HALT:
       cout << "Unsupported instruction in this version " << instTable[m_op].opString << endl;
+      break;
+
+    case HALT:
+      exec_finish = true;
+      cout << "Received HALT" << endl;
       break;
 
     //Memory
@@ -223,41 +231,99 @@ void instruction_c::execute(warp_c &warp, int threadID) {
     case NOTP:
 
         break;
+        
     //Value Tests
     case RTOP:
     case ISNEG:
     case ISZERO:
 
         break;
-    //Imm Arith/Logic
-    case LDI:
-    case ADDI:
-    case SUBI:
-    case MULI:
-    case DIVI:
-    case MODI:
-    case SHRI:
-    case SHLI:
-    case ANDI:
-    case ORI: 
-    case XORI:
 
-        break;
+    //Imm Arith/Logic
+    case ADDI:
+      warp.m_regRF[threadID][m_destReg] = warp.m_regRF[threadID][m_srcReg[0]] + m_srcImm;
+      warp.m_regRF[threadID][m_destReg] &= (pow2(WORD_SIZE_IN_BITS) - 1 );
+      break;
+    case SUBI:
+      warp.m_regRF[threadID][m_destReg] = warp.m_regRF[threadID][m_srcReg[0]] - m_srcImm;
+      warp.m_regRF[threadID][m_destReg] &= (pow2(WORD_SIZE_IN_BITS) - 1 );
+      break;
+    case MULI:
+      warp.m_regRF[threadID][m_destReg] = warp.m_regRF[threadID][m_srcReg[0]] * m_srcImm;
+      warp.m_regRF[threadID][m_destReg] &= (pow2(WORD_SIZE_IN_BITS) - 1 );
+      break;
+    case DIVI:
+      warp.m_regRF[threadID][m_destReg] = warp.m_regRF[threadID][m_srcReg[0]] / m_srcImm;
+      break;
+    case MODI:
+      warp.m_regRF[threadID][m_destReg] = warp.m_regRF[threadID][m_srcReg[0]] % m_srcImm;
+      break;
+    case SHRI:
+      warp.m_regRF[threadID][m_destReg] = Word_s(warp.m_regRF[threadID][m_srcReg[0]]) >> m_srcImm;
+      break;
+    case SHLI:
+      warp.m_regRF[threadID][m_destReg] = warp.m_regRF[threadID][m_srcReg[0]] << m_srcImm;
+      warp.m_regRF[threadID][m_destReg] &= (pow2(WORD_SIZE_IN_BITS) - 1 );
+      break;
+    case ANDI:
+      warp.m_regRF[threadID][m_destReg] = warp.m_regRF[threadID][m_srcReg[0]] & m_srcImm;
+      break;
+    case ORI:
+      warp.m_regRF[threadID][m_destReg] = warp.m_regRF[threadID][m_srcReg[0]] | m_srcImm;
+      break; 
+    case XORI:
+      warp.m_regRF[threadID][m_destReg] = warp.m_regRF[threadID][m_srcReg[0]] ^ m_srcImm;
+      break;
+    case LDI:
+      warp.m_regRF[threadID][m_destReg] = m_srcImm;
+      warp.m_regRF[threadID][m_destReg] &= (pow2(WORD_SIZE_IN_BITS) - 1 );
+      break;
+
     //Reg Arith/Logic
     case ADD:
+      warp.m_regRF[threadID][m_destReg] = warp.m_regRF[threadID][m_srcReg[0]] + warp.m_regRF[threadID][m_srcReg[1]];
+      warp.m_regRF[threadID][m_destReg] &= (pow2(WORD_SIZE_IN_BITS) - 1 );
+      break;
     case SUB:
+      warp.m_regRF[threadID][m_destReg] = warp.m_regRF[threadID][m_srcReg[0]] - warp.m_regRF[threadID][m_srcReg[1]];
+      warp.m_regRF[threadID][m_destReg] &= (pow2(WORD_SIZE_IN_BITS) - 1 );
+      break;
     case MUL:
+      warp.m_regRF[threadID][m_destReg] = warp.m_regRF[threadID][m_srcReg[0]] * warp.m_regRF[threadID][m_srcReg[1]];
+      warp.m_regRF[threadID][m_destReg] &= (pow2(WORD_SIZE_IN_BITS) - 1 );
+      break;
     case DIV:
+      warp.m_regRF[threadID][m_destReg] = warp.m_regRF[threadID][m_srcReg[0]] / warp.m_regRF[threadID][m_srcReg[1]];
+      break;
     case SHL:
+      warp.m_regRF[threadID][m_destReg] = warp.m_regRF[threadID][m_srcReg[0]] << warp.m_regRF[threadID][m_srcReg[1]];
+      warp.m_regRF[threadID][m_destReg] &= (pow2(WORD_SIZE_IN_BITS) - 1 );
+      break;
     case SHR:
+      warp.m_regRF[threadID][m_destReg] = Word_s(warp.m_regRF[threadID][m_srcReg[0]]) >> warp.m_regRF[threadID][m_srcReg[1]];
+      warp.m_regRF[threadID][m_destReg] &= (pow2(WORD_SIZE_IN_BITS) - 1 );
+      break;
     case MOD:
+      warp.m_regRF[threadID][m_destReg] = warp.m_regRF[threadID][m_srcReg[0]] % warp.m_regRF[threadID][m_srcReg[1]];
+      break;
     case AND:
+      warp.m_regRF[threadID][m_destReg] = warp.m_regRF[threadID][m_srcReg[0]] & warp.m_regRF[threadID][m_srcReg[1]];
+      break;
     case OR:
+      warp.m_regRF[threadID][m_destReg] = warp.m_regRF[threadID][m_srcReg[0]] | warp.m_regRF[threadID][m_srcReg[1]];
+      break;
     case XOR:
+      warp.m_regRF[threadID][m_destReg] = warp.m_regRF[threadID][m_srcReg[0]] ^ warp.m_regRF[threadID][m_srcReg[1]];
+      break;
     case NEG:
+      warp.m_regRF[threadID][m_destReg] = -(Word_s)warp.m_regRF[threadID][m_srcReg[0]];
+      warp.m_regRF[threadID][m_destReg] &= (pow2(WORD_SIZE_IN_BITS) - 1 );
+      break;
     case NOT:
+      warp.m_regRF[threadID][m_destReg] = ~(Word_s)warp.m_regRF[threadID][m_srcReg[0]];
+      warp.m_regRF[threadID][m_destReg] &= (pow2(WORD_SIZE_IN_BITS) - 1 );
+      break;
 
-        break;
     //Floating Point
     case ITOF:
     case FTOI:

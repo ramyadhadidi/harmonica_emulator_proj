@@ -1,6 +1,7 @@
 CXX =g++
 CXXFALGS = -c -Wall
 
+
 all: util.o instruction.o warp.o core.o main.o 
 	$(CXX) main.o util.o instruction.o warp.o core.o -o harp_emulator
 
@@ -16,7 +17,7 @@ instruction.o: instruction.cpp globals.h
 warp.o: warp.cpp globals.h
 	$(CXX) $(CXXFALGS) warp.cpp
 
-core.h: core.cpp globals.h
+core.o: core.cpp globals.h
 	$(CXX) $(CXXFALGS) core.cpp
 
 clean:

@@ -16,9 +16,9 @@ warp_c::warp_c(const warp_c &warp, binReader_c* bin) {
       m_pc[i] = 0;
       m_next_pc[i] = 0;
       for (int j=0; j<GPR_REG_NUM; j++)
-        m_reg[i][j] = 0;
+        m_regRF[i][j] = 0;
       for (int j=0; j<PRED_REG_NUM; j++)
-        m_pred[i][j] = 0;
+        m_predRF[i][j] = 0;
     }
 
     m_bin = bin;
@@ -30,9 +30,9 @@ warp_c& warp_c::operator=(const warp_c& warp) {
       this->m_pc[i] = 0;
       this->m_next_pc[i] = 0;
       for (int j=0; j<GPR_REG_NUM; j++)
-        this->m_reg[i][j] = 0;
+        this->m_regRF[i][j] = 0;
       for (int j=0; j<PRED_REG_NUM; j++)
-        this->m_pred[i][j] = 0;
+        this->m_predRF[i][j] = 0;
   }
 
   this->m_bin = warp.m_bin;
@@ -45,9 +45,9 @@ warp_c::warp_c(binReader_c* bin) {
     m_pc[i] = 0;
     m_next_pc[i] = 0;
     for (int j=0; j<GPR_REG_NUM; j++)
-      m_reg[i][j] = 0;
+      m_regRF[i][j] = 0;
     for (int j=0; j<PRED_REG_NUM; j++)
-      m_pred[i][j] = 0;
+      m_predRF[i][j] = 0;
   }
 
   m_bin = bin;
@@ -58,5 +58,10 @@ void warp_c::step() {
     instruction_c inst = instruction_c(m_bin->get_inst(m_pc[threadId]));
     inst.execute(*this, threadId);
     m_pc[threadId] += STEP_PC;
+
+    if(exec_finish) {
+      cout << "ME" << endl;
+      exit(1);
+    }
   }
 }
