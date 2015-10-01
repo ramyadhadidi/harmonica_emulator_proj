@@ -10,7 +10,7 @@
     if (DEBUG) \
     cout << X << endl; 
 
-#define DEBUG 1
+#define DEBUG 0
 
 /* 4w8/8/1/1 to 8w/64/64/64/64 */
 /*
@@ -26,8 +26,8 @@
 #define WORD_SIZE_IN_BYTE 4
 #define GPR_REG_NUM 8
 #define PRED_REG_NUM 8
-#define SIMD_LANE 8
-#define WARP_SIZE 8
+#define SIMD_LANE_NUM 8
+#define WARP_SIZE 1
 
 
 #define INST_SIZE_BITS WORD_SIZE_IN_BYTE*8
@@ -48,5 +48,7 @@ typedef Word_u   Addr;
 typedef Word_u   Size;
 
 typedef unsigned RegNum;
+
+extern bool exec_finish;
 
 #endif
