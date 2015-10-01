@@ -55,6 +55,20 @@ Word binReader_c::get_inst(Addr PC) {
   return output;
 }
 
+Word binReader_c::get_data(Addr dataAddr) {
+  if (dataAddr+WORD_SIZE_IN_BYTE-1 > binary_stream.size()) {
+    cerr << "dataAddr out of memory" << endl;
+    exit(1);
+  }
+
+  Word output = 0;
+  for (int i=0; i<WORD_SIZE_IN_BYTE; i++)
+    output += binary_stream[dataAddr+i] * pow(256, i);
+
+  DEBUG_PRINT("Data[" << hex << dataAddr << "] = " << hex << output << dec);
+  return output;
+}
+
 Byte binReader_c::get_byte(Addr addr) {
   if (addr > binary_stream.size()) {
     cerr << "Addressing out of memory" << endl;

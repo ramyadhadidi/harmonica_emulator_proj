@@ -67,6 +67,12 @@ instruction_c::instTableEntry instruction_c::instTable[] = {
   {NULL,false,false,false,false,AC_NONE,NULL,ITYPE_NULL}/////// End of table.
 };
 
+Word instruction_c::signExt(Word s, Word last_bit) {
+  if (s >> (last_bit-1))
+    s |= ~(pow2(last_bit)-1);
+  return s;
+}
+
 instruction_c::instruction_c(Word inst) :
   m_predicated(false), m_destReg(0), m_destPReg(0),
   m_nRsrc(0), m_nPsrc(0), m_immsrcPresent(false), m_srcImm(0)
@@ -96,7 +102,7 @@ instruction_c::instruction_c(Word inst) :
     case AC_2IMM:
       current_right_shift -= GPR_REG_BIT;
       setDestReg(( inst  >> current_right_shift ) & (GPR_REG_NUM-1LL));
-      setImmSrc(inst & ( pow2(current_right_shift) - 1 ));
+      setImmSrc(signExt((inst & ( pow2(current_right_shift) - 1 )), current_right_shift));
       break;
 
     case AC_3REG:
@@ -122,7 +128,7 @@ instruction_c::instruction_c(Word inst) :
       setDestReg(( inst  >> current_right_shift ) & (GPR_REG_NUM-1LL));
       current_right_shift -= GPR_REG_BIT;
       setSrcReg(( inst  >> current_right_shift ) & (GPR_REG_NUM-1LL));
-      setImmSrc(inst & ( pow2(current_right_shift) - 1 ));
+      setImmSrc(signExt((inst & ( pow2(current_right_shift) - 1 )), current_right_shift));
       break;
 
     case AC_3REGSRC:
@@ -135,7 +141,7 @@ instruction_c::instruction_c(Word inst) :
       break;
 
     case AC_1IMM:
-      setImmSrc(inst & ( pow2(current_right_shift) - 1 ));
+      setImmSrc(signExt((inst & ( pow2(current_right_shift) - 1 )), current_right_shift));
       break;
 
     case AC_1REG:
@@ -148,7 +154,7 @@ instruction_c::instruction_c(Word inst) :
       setSrcReg(( inst  >> current_right_shift ) & (GPR_REG_NUM-1LL));
       current_right_shift -= GPR_REG_BIT;
       setSrcReg(( inst  >> current_right_shift ) & (GPR_REG_NUM-1LL));
-      setImmSrc(inst & ( pow2(current_right_shift) - 1 ));
+      setImmSrc(signExt((inst & ( pow2(current_right_shift) - 1 )), current_right_shift));
       break;
 
     case AC_PREG_REG:
@@ -157,27 +163,32 @@ instruction_c::instruction_c(Word inst) :
       current_right_shift -= GPR_REG_BIT;
       setSrcReg(( inst  >> current_right_shift ) & (GPR_REG_NUM-1LL));
       break;
+
     case AC_2PREG:
       current_right_shift -= PRED_REG_BIT;
       setDestPReg(( inst  >> current_right_shift ) & (PRED_REG_NUM-1LL));
       current_right_shift -= PRED_REG_BIT;
       setSrcPReg(( inst  >> current_right_shift ) & (PRED_REG_NUM-1LL));
       break;
+
     case AC_2REGSRC:
       current_right_shift -= GPR_REG_BIT;
       setSrcReg(( inst  >> current_right_shift ) & (GPR_REG_NUM-1LL));
       current_right_shift -= GPR_REG_BIT;
       setSrcReg(( inst  >> current_right_shift ) & (GPR_REG_NUM-1LL));
       break;
+      
     default:
       cerr << "Unknown argument class." << endl;
   }
 
 
-  DEBUG_PRINT("inst: " << hex << inst << dec);
+  DEBUG_PRINT(" ");
+  DEBUG_PRINT("inst: 0x" << hex << inst << dec);
+  DEBUG_PRINT("opCode: " << instTable[m_op].opString << " 0x" << hex << m_op << dec);
+  /*
   DEBUG_PRINT("pred: " << m_predicated);
   DEBUG_PRINT("pReg: " << m_predReg);
-  DEBUG_PRINT("opCode: " << instTable[m_op].opString << " 0x" << hex << m_op << dec);
   DEBUG_PRINT("argClass: " << instTable[m_op].argClassString);
   DEBUG_PRINT("---------------")
   DEBUG_PRINT("Rdest: " << m_destReg);
@@ -186,17 +197,18 @@ instruction_c::instruction_c(Word inst) :
   DEBUG_PRINT("nPsrc: " << m_nPsrc);
   DEBUG_PRINT("Rsrc 0 1 2: " << m_srcReg[0] << " " << m_srcReg[1] << " "  << m_srcReg[2]);
   DEBUG_PRINT("Psrc 0 1 2: " << m_srcPReg[0] << " " << m_srcPReg[1] << " "  << m_srcPReg[2]);
-  DEBUG_PRINT("immSrc: " << hex << m_srcImm << dec);
-  DEBUG_PRINT("\n");
+  DEBUG_PRINT("immSrc: 0x" << hex << m_srcImm << dec);
+  */
 }
 
-void instruction_c::execute(warp_c &warp, int threadID) {
+void instruction_c::execute(warp_c &warp, unsigned int threadID) {
   //Check for Predicate
   if (m_predicated)
     if(!warp.m_predRF[threadID][m_predReg])
       return;
 
 
+  Word memoryAddr;
   switch(m_op) {
     //Trivial
     case NOP: 
@@ -221,38 +233,72 @@ void instruction_c::execute(warp_c &warp, int threadID) {
 
     //Memory
     case ST:
+      break;
     case LD:
-      
-        break;
+      memoryAddr = warp.m_regRF[threadID][m_srcReg[0]] + m_srcImm;
+      warp.m_regRF[threadID][m_destReg] = warp.m_bin->get_data(memoryAddr);
+      DEBUG_PRINTF(("r[%u][%u](%lu) = LD[r[%u][%u](%lu) + Imm(%lu)](%lu)\n", \
+                    threadID, m_destReg, warp.m_regRF[threadID][m_destReg], \
+                    threadID, m_srcReg[0], warp.m_regRF[threadID][m_srcReg[0]], \
+                    m_srcImm, memoryAddr));
+      break;
     //Predicate Manipulation
     case ANDP:
-      warp.m_predRF[threadID][m_destPReg] = warp.m_pregRF[threadID][m_srcPReg[0]] & warp.m_pregRF[threadID][m_srcPReg[1]];
+      warp.m_predRF[threadID][m_destPReg] = warp.m_predRF[threadID][m_srcPReg[0]] & warp.m_predRF[threadID][m_srcPReg[1]];
+      DEBUG_PRINTF(("p[%u][%u](0x%x) = p[%u][%u](0x%x) & p[%u][%u](0x%x)\n", \
+                    threadID, m_destPReg, warp.m_predRF[threadID][m_destPReg], \
+                    threadID, m_srcPReg[0], warp.m_predRF[threadID][m_srcPReg[0]], \
+                    threadID, m_srcPReg[1], warp.m_predRF[threadID][m_srcPReg[1]]));
       break;
     case ORP:
-      warp.m_predRF[threadID][m_destPReg] = warp.m_pregRF[threadID][m_srcPReg[0]] | warp.m_pregRF[threadID][m_srcPReg[1]]; 
+      warp.m_predRF[threadID][m_destPReg] = warp.m_predRF[threadID][m_srcPReg[0]] | warp.m_predRF[threadID][m_srcPReg[1]]; 
+      DEBUG_PRINTF(("p[%u][%u](0x%x) = p[%u][%u](0x%x) | p[%u][%u](0x%x)\n", \
+                    threadID, m_destPReg, warp.m_predRF[threadID][m_destPReg], \
+                    threadID, m_srcPReg[0], warp.m_predRF[threadID][m_srcPReg[0]], \
+                    threadID, m_srcPReg[1], warp.m_predRF[threadID][m_srcPReg[1]]));
       break;
     case XORP:
-      warp.m_predRF[threadID][m_destPReg] = warp.m_pregRF[threadID][m_srcPReg[0]] != warp.m_pregRF[threadID][m_srcPReg[1]];
+      warp.m_predRF[threadID][m_destPReg] = warp.m_predRF[threadID][m_srcPReg[0]] != warp.m_predRF[threadID][m_srcPReg[1]];
+      DEBUG_PRINTF(("p[%u][%u](0x%x) = p[%u][%u](0x%x) ^ p[%u][%u](0x%x)\n", \
+                    threadID, m_destPReg, warp.m_predRF[threadID][m_destPReg], \
+                    threadID, m_srcPReg[0], warp.m_predRF[threadID][m_srcPReg[0]], \
+                    threadID, m_srcPReg[1], warp.m_predRF[threadID][m_srcPReg[1]]));
       break;
     case NOTP:
-      warp.m_predRF[threadID][m_destPReg] = !warp.m_pregRF[threadID][m_srcPReg[0]];
+      warp.m_predRF[threadID][m_destPReg] = !warp.m_predRF[threadID][m_srcPReg[0]];
+      DEBUG_PRINTF(("p[%u][%u](0x%x) = !p[%u][%u](0x%x)\n", \
+                    threadID, m_destPReg, warp.m_predRF[threadID][m_destPReg], \
+                    threadID, m_srcPReg[0], warp.m_predRF[threadID][m_srcPReg[0]]));
       break;
 
     //Value Tests
     case RTOP:
       warp.m_predRF[threadID][m_destPReg] = warp.m_regRF[threadID][m_srcReg[0]];
+      DEBUG_PRINTF(("p[%u][%u](0x%x) = !r[%u][%d](%lu)\n", \
+                    threadID, m_destPReg, warp.m_predRF[threadID][m_destPReg], \
+                    threadID, m_srcReg[0], warp.m_regRF[threadID][m_srcReg[0]]));
       break; 
     case ISNEG:
       warp.m_predRF[threadID][m_destPReg] = (1ll << (WORD_SIZE_IN_BITS-1)) & warp.m_regRF[threadID][m_srcReg[0]];
+      DEBUG_PRINTF(("p[%u][%u](0x%x) ISNEG r[%u][%d](%ld)\n", \
+                    threadID, m_destPReg, warp.m_predRF[threadID][m_destPReg], \
+                    threadID, m_srcReg[0], (long)warp.m_regRF[threadID][m_srcReg[0]]));
       break;
     case ISZERO:
-      warp.m_predRF[threadID][m_destPReg] != warp.m_regRF[threadID][m_srcReg[0]];
+      warp.m_predRF[threadID][m_destPReg] = !warp.m_regRF[threadID][m_srcReg[0]];
+      DEBUG_PRINTF(("p[%u][%u](0x%x) ISZERO r[%u][%d](%lu)\n", \
+                    threadID, m_destPReg, warp.m_predRF[threadID][m_destPReg], \
+                    threadID, m_srcReg[0], warp.m_regRF[threadID][m_srcReg[0]]));
       break;
 
     //Imm Arith/Logic
     case ADDI:
       warp.m_regRF[threadID][m_destReg] = warp.m_regRF[threadID][m_srcReg[0]] + m_srcImm;
       warp.m_regRF[threadID][m_destReg] &= (pow2(WORD_SIZE_IN_BITS) - 1 );
+      DEBUG_PRINTF(("r[%u][%u](%lu) = r[%u][%u](%lu) + Imm(%lu)\n", \
+                    threadID, m_destReg, warp.m_regRF[threadID][m_destReg], \
+                    threadID, m_srcReg[0], warp.m_regRF[threadID][m_srcReg[0]], \
+                    m_srcImm));
       break;
     case SUBI:
       warp.m_regRF[threadID][m_destReg] = warp.m_regRF[threadID][m_srcReg[0]] - m_srcImm;
@@ -287,6 +333,9 @@ void instruction_c::execute(warp_c &warp, int threadID) {
     case LDI:
       warp.m_regRF[threadID][m_destReg] = m_srcImm;
       warp.m_regRF[threadID][m_destReg] &= (pow2(WORD_SIZE_IN_BITS) - 1 );
+      DEBUG_PRINTF(("r[%u][%u](%lu) = Imm(%lu)\n", \
+                    threadID, m_destReg, warp.m_regRF[threadID][m_destReg], \
+                    m_srcImm));
       break;
 
     //Reg Arith/Logic
