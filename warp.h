@@ -13,13 +13,14 @@ class warp_c {
 
   public:
     warp_c();
-    warp_c(const warp_c &warp, binReader_c* bin=NULL);
+    warp_c(const warp_c &warp, binReader_c* bin=NULL, unsigned int warpId=0);
     warp_c& operator=(const warp_c& warp);
-    warp_c(binReader_c* bin);
+    warp_c(binReader_c* bin, unsigned int warpId);
 
     void step();
 
   private:
+    unsigned int m_warpId;
     binReader_c *m_bin;
 
     Addr m_pc[WARP_SIZE];
