@@ -2,7 +2,6 @@
 #define CORE_H
 
 #include <iostream>
-#include <string>
 #include "globals.h"
 #include "warp.h"
 
@@ -13,6 +12,7 @@ class core_c {
   public:
     core_c();
     core_c(string filename);
+    void step();
 
   private:
     string m_binary_filename;

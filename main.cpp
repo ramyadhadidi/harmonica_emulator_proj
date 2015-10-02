@@ -1,7 +1,4 @@
-#include <iostream>
-#include <fstream>
 #include <cstdlib>
-#include <string>
 #include <sstream>
 #include <vector>
 #include <queue>
@@ -23,6 +20,7 @@ using namespace std;
 */
 
 bool exec_finish = false;
+ofstream output_file;
 
 int main(int argc, char** argv) {
   if (argc != 3) {
@@ -30,8 +28,21 @@ int main(int argc, char** argv) {
     exit(1);
   }
   string binary_filename = argv[1];
+  string output_filename = argv[2];
+
+  #ifdef OUTPUT_TO_FILE
+    output_file.open(output_filename.c_str());
+  #endif
+
 
   core_c core(binary_filename);
+  while(!exec_finish)
+    core.step();
+
+
+  #ifdef OUTPUT_TO_FILE
+    output_file.close();
+  #endif
 
   /*
   while(!exe_end) {

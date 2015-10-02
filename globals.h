@@ -4,6 +4,9 @@
 #include <stdint.h>
 #include <inttypes.h>
 #include <math.h>
+#include <string>
+#include <iostream>
+#include <fstream>
 
 #define pow2(X) (Word)pow(2,X)
 
@@ -24,23 +27,30 @@
 #define DEBUG_PC_PRINT(X) do {} while (0);
 #endif
 
-/* 4w8/8/1/1 to 8w/64/64/64/64 */
-/*
-  4 bytes register and addresses
-  word based inst encoding (64bit)
-  # general purpose register
-  # predicate registers
-  # SIMD lane
-  # warps
-*/
+#define OUTPUT_TO_FILE       //to use second argv to save to file, else put to stdout
 
-
-#define WORD_SIZE_IN_BYTE 4
-#define GPR_REG_NUM 8
-#define PRED_REG_NUM 8
-#define SIMD_LANE_NUM 8
-#define WARP_SIZE 1
-
+////////////////////////////////////////////////////////////////
+// Harp Architecture Setting                                  //
+////////////////////////////////////////////////////////////////
+                                                              //
+/* 4w8/8/1/1 to 8w/64/64/64/64 */                             //
+/*                                                            //
+  4 bytes register and addresses                              //
+  word based inst encoding (64bit)                            //
+  # general purpose registers                                 //
+  # predicate registers                                       //
+  # SIMD Number of SM (1warp/SM)                              //
+  # warps                                                     //
+*/                                                            //
+                                                              //
+                                                              //
+#define WORD_SIZE_IN_BYTE 4                                   //
+#define GPR_REG_NUM 8                                         //
+#define PRED_REG_NUM 8                                        //
+#define SIMD_LANE_NUM 8                                       //
+#define WARP_SIZE 8                                           //
+                                                              //
+////////////////////////////////////////////////////////////////
 
 #define WORD_SIZE_IN_BITS WORD_SIZE_IN_BYTE*8
 #define INST_SIZE_BITS WORD_SIZE_IN_BYTE*8
@@ -49,7 +59,7 @@
 
 #define STEP_PC WORD_SIZE_IN_BYTE
 
-#define MAX_REG_SOURCES 3
+#define MAX_REG_SOURCES 3         //max registers that could be in single instruction
 #define MAX_PREG_SOURCES 3
 
 typedef uint8_t  Byte;
@@ -63,6 +73,7 @@ typedef Word_u   Size;
 
 typedef unsigned RegNum;
 
-extern bool exec_finish;
+extern bool exec_finish;          //global value of exection is finished or not (currently all thread can access it)
+extern std::ofstream output_file;
 
 #endif

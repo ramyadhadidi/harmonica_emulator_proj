@@ -244,8 +244,15 @@ void instruction_c::execute(warp_c &warp, unsigned int threadID) {
     //Memory
     case ST:
       memoryAddr = warp.m_regRF[threadID][m_srcReg[1]] + m_srcImm;  
-      if (memoryAddr == ( (1LL << (INST_SIZE_BITS-1))) ) 
-        cout <<  (char)warp.m_regRF[threadID][m_srcReg[0]];
+      if (memoryAddr == ( (1LL << (INST_SIZE_BITS-1))) ) {
+        if (warp.m_warpId == 0 && threadID == 0) {
+          #ifdef OUTPUT_TO_FILE
+            output_file << (char)warp.m_regRF[threadID][m_srcReg[0]];
+          #else
+            cout << (char)warp.m_regRF[threadID][m_srcReg[0]];
+          #endif
+        }
+      }
       else 
         warp.m_bin->write_data(memoryAddr, warp.m_regRF[threadID][m_srcReg[0]]);
       DEBUG_PRINTF(("ST r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64") 0x%"PRIx64" (Addr:0x%"PRIx64")\n", \
