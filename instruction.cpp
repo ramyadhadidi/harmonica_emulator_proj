@@ -201,11 +201,6 @@ instruction_c::instruction_c(Word inst) :
 }
 
 void instruction_c::execute(warp_c &warp, unsigned int threadID) {
-  //Check for Predicate
-  if (m_predicated)
-    if(!warp.m_predRF[threadID][m_predReg])
-      return;
-
   //Debug Messages
   DEBUG_PRINTF(("\n"));
   DEBUG_PRINTF(("pc: 0x%"PRIx64"\n", warp.m_pc[threadID]));
@@ -213,9 +208,15 @@ void instruction_c::execute(warp_c &warp, unsigned int threadID) {
   if(m_predicated)
     DEBUG_PRINTF(("@p%u\n", m_predReg));
 
-  //Inst Execution
   bool pc_changed = false;
   Word memoryAddr;
+
+  //Check for Predicate
+  if (m_predicated)
+    if(!warp.m_predRF[threadID][m_predReg])
+      goto noExecution;
+
+  //Inst Execution
   switch(m_op) {
     //Trivial
     case NOP: 
@@ -546,6 +547,8 @@ void instruction_c::execute(warp_c &warp, unsigned int threadID) {
       cerr << "Unsupported instruction opcode: 0x" << hex << m_op << dec << endl;
       exit(1);
   }
+
+  noExecution:
 
   //Update PC
   if (!pc_changed)
