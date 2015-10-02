@@ -1,5 +1,5 @@
 CXX =g++
-CXXFALGS = -c -Wall
+CXXFALGS = -c -Wall -g
 
 
 all: util.o instruction.o warp.o core.o main.o 

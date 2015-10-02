@@ -55,10 +55,8 @@ warp_c::warp_c(binReader_c* bin) {
 
 void warp_c::step() {
   for (unsigned int threadId=0; threadId<WARP_SIZE; threadId++) {
-    cout << "PC= " << hex << m_pc[threadId] << dec << endl;
     instruction_c inst = instruction_c(m_bin->get_inst(m_pc[threadId]));
     inst.execute(*this, threadId);
-    m_pc[threadId] += STEP_PC;
 
     if(exec_finish) {
       cout << "ME" << endl;

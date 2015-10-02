@@ -2,6 +2,7 @@
 #define GLOBALS_H
 
 #include <stdint.h>
+#include <inttypes.h>
 #include <math.h>
 
 #define pow2(X) (Word)pow(2,X)
@@ -48,6 +49,7 @@ typedef uint8_t  Byte;
 typedef uint64_t Word;
 typedef uint64_t Word_u;
 typedef int64_t  Word_s;
+typedef uint32_t uint32;
 
 typedef Word_u   Addr;
 typedef Word_u   Size;

@@ -1,9 +1,5 @@
 #include "util.h"
 
-//////////////////////////////////////////////////////////////////////////
-// Binary Reader
-//////////////////////////////////////////////////////////////////////////
-
 binReader_c::binReader_c() : 
    m_fileName("") {}
 
@@ -57,15 +53,15 @@ Word binReader_c::get_inst(Addr PC) {
 
 Word binReader_c::get_data(Addr dataAddr) {
   if (dataAddr+WORD_SIZE_IN_BYTE-1 > binary_stream.size()) {
-    cerr << "dataAddr out of memory" << endl;
     exit(1);
   }
 
   Word output = 0;
-  for (int i=0; i<WORD_SIZE_IN_BYTE; i++)
+  for (int i=0; i<WORD_SIZE_IN_BYTE; i++) {
     output += binary_stream[dataAddr+i] * pow(256, i);
+  }
 
-  DEBUG_PRINT("Data[" << hex << dataAddr << "] = " << hex << output << dec);
+  DEBUG_PRINT("Read Data[" << hex << dataAddr << "] = " << hex << output << dec);
   return output;
 }
 
@@ -78,7 +74,19 @@ Byte binReader_c::get_byte(Addr addr) {
   return binary_stream[addr];
 }
 
-//////////////////////////////////////////////////////////////////////////
-// Constructors
-//////////////////////////////////////////////////////////////////////////
+void binReader_c::write_data(Addr dataAddr, Word data) {
+  Word original_data = data;
+  if (dataAddr+WORD_SIZE_IN_BYTE-1 > binary_stream.size()) {
+    cerr << "dataAddr out of memory (Write Data)" << endl;
+    exit(1);
+  }
+
+  for (int i=0; i<WORD_SIZE_IN_BYTE; i++) {
+    Word partial_data = data & (pow2(8)-1);
+    binary_stream[dataAddr + i] = (Byte)partial_data;
+    data = data >> 8;
+  }
+
+  DEBUG_PRINT("Write Data[" << hex << dataAddr << "] = " << hex << original_data << dec);
+}
 

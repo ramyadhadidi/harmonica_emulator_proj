@@ -182,11 +182,10 @@ instruction_c::instruction_c(Word inst) :
       cerr << "Unknown argument class." << endl;
   }
 
-
+  /*
   DEBUG_PRINT(" ");
   DEBUG_PRINT("inst: 0x" << hex << inst << dec);
   DEBUG_PRINT("opCode: " << instTable[m_op].opString << " 0x" << hex << m_op << dec);
-  /*
   DEBUG_PRINT("pred: " << m_predicated);
   DEBUG_PRINT("pReg: " << m_predReg);
   DEBUG_PRINT("argClass: " << instTable[m_op].argClassString);
@@ -207,7 +206,15 @@ void instruction_c::execute(warp_c &warp, unsigned int threadID) {
     if(!warp.m_predRF[threadID][m_predReg])
       return;
 
+  //Debug Messages
+  DEBUG_PRINTF(("\n"));
+  DEBUG_PRINTF(("pc: 0x%"PRIx64"\n", warp.m_pc[threadID]));
 
+  if(m_predicated)
+    DEBUG_PRINTF(("@p%u\n", m_predReg));
+
+  //Inst Execution
+  bool pc_changed = false;
   Word memoryAddr;
   switch(m_op) {
     //Trivial
@@ -233,60 +240,66 @@ void instruction_c::execute(warp_c &warp, unsigned int threadID) {
 
     //Memory
     case ST:
+      memoryAddr = warp.m_regRF[threadID][m_srcReg[1]] + m_srcImm;
+      warp.m_bin->write_data(memoryAddr, warp.m_regRF[threadID][m_srcReg[0]]);
+      DEBUG_PRINTF(("ST r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64") 0x%"PRIx64" (Addr:0x%"PRIx64")\n", \
+                    m_srcReg[0], threadID, warp.m_regRF[threadID][m_destReg], \
+                    m_srcReg[1], threadID, warp.m_regRF[threadID][m_srcReg[0]], \
+                    m_srcImm, memoryAddr));
       break;
     case LD:
       memoryAddr = warp.m_regRF[threadID][m_srcReg[0]] + m_srcImm;
       warp.m_regRF[threadID][m_destReg] = warp.m_bin->get_data(memoryAddr);
-      DEBUG_PRINTF(("r[%u][%u](%lu) = LD[r[%u][%u](%lu) + Imm(%lu)](%lu)\n", \
-                    threadID, m_destReg, warp.m_regRF[threadID][m_destReg], \
-                    threadID, m_srcReg[0], warp.m_regRF[threadID][m_srcReg[0]], \
+      DEBUG_PRINTF(("LD r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64") + 0x%"PRIx64" (Addr:0x%"PRIx64")\n", \
+                    m_destReg, threadID, warp.m_regRF[threadID][m_destReg], \
+                    m_srcReg[0], threadID, warp.m_regRF[threadID][m_srcReg[0]], \
                     m_srcImm, memoryAddr));
       break;
     //Predicate Manipulation
     case ANDP:
       warp.m_predRF[threadID][m_destPReg] = warp.m_predRF[threadID][m_srcPReg[0]] & warp.m_predRF[threadID][m_srcPReg[1]];
-      DEBUG_PRINTF(("p[%u][%u](0x%x) = p[%u][%u](0x%x) & p[%u][%u](0x%x)\n", \
-                    threadID, m_destPReg, warp.m_predRF[threadID][m_destPReg], \
-                    threadID, m_srcPReg[0], warp.m_predRF[threadID][m_srcPReg[0]], \
-                    threadID, m_srcPReg[1], warp.m_predRF[threadID][m_srcPReg[1]]));
+      DEBUG_PRINTF(("ANDP p%u[%u](0x%x) p%u[%u](0x%x) p%u[%u](0x%x)\n", \
+                    m_destPReg, threadID, warp.m_predRF[threadID][m_destPReg], \
+                    m_srcPReg[0], threadID, warp.m_predRF[threadID][m_srcPReg[0]], \
+                    m_srcPReg[1], threadID, warp.m_predRF[threadID][m_srcPReg[1]]));
       break;
     case ORP:
       warp.m_predRF[threadID][m_destPReg] = warp.m_predRF[threadID][m_srcPReg[0]] | warp.m_predRF[threadID][m_srcPReg[1]]; 
-      DEBUG_PRINTF(("p[%u][%u](0x%x) = p[%u][%u](0x%x) | p[%u][%u](0x%x)\n", \
-                    threadID, m_destPReg, warp.m_predRF[threadID][m_destPReg], \
-                    threadID, m_srcPReg[0], warp.m_predRF[threadID][m_srcPReg[0]], \
-                    threadID, m_srcPReg[1], warp.m_predRF[threadID][m_srcPReg[1]]));
+      DEBUG_PRINTF(("ORP p%u[%u](0x%x) p%u[%u](0x%x) p%u[%u](0x%x)\n", \
+                    m_destPReg, threadID, warp.m_predRF[threadID][m_destPReg], \
+                    m_srcPReg[0], threadID, warp.m_predRF[threadID][m_srcPReg[0]], \
+                    m_srcPReg[1], threadID, warp.m_predRF[threadID][m_srcPReg[1]]));
       break;
     case XORP:
       warp.m_predRF[threadID][m_destPReg] = warp.m_predRF[threadID][m_srcPReg[0]] != warp.m_predRF[threadID][m_srcPReg[1]];
-      DEBUG_PRINTF(("p[%u][%u](0x%x) = p[%u][%u](0x%x) ^ p[%u][%u](0x%x)\n", \
-                    threadID, m_destPReg, warp.m_predRF[threadID][m_destPReg], \
-                    threadID, m_srcPReg[0], warp.m_predRF[threadID][m_srcPReg[0]], \
-                    threadID, m_srcPReg[1], warp.m_predRF[threadID][m_srcPReg[1]]));
+      DEBUG_PRINTF(("XORP p%u[%u](0x%x) p%u[%u](0x%x) p%u[%u](0x%x)\n", \
+                    m_destPReg, threadID, warp.m_predRF[threadID][m_destPReg], \
+                    m_srcPReg[0], threadID, warp.m_predRF[threadID][m_srcPReg[0]], \
+                    m_srcPReg[1], threadID, warp.m_predRF[threadID][m_srcPReg[1]]));
       break;
     case NOTP:
       warp.m_predRF[threadID][m_destPReg] = !warp.m_predRF[threadID][m_srcPReg[0]];
-      DEBUG_PRINTF(("p[%u][%u](0x%x) = !p[%u][%u](0x%x)\n", \
-                    threadID, m_destPReg, warp.m_predRF[threadID][m_destPReg], \
-                    threadID, m_srcPReg[0], warp.m_predRF[threadID][m_srcPReg[0]]));
+      DEBUG_PRINTF(("NOTP p%u[%u](0x%x) p%u[%u](0x%x)\n", \
+                    m_destPReg, threadID, warp.m_predRF[threadID][m_destPReg], \
+                    m_srcPReg[0], threadID, warp.m_predRF[threadID][m_srcPReg[0]]));
       break;
 
     //Value Tests
     case RTOP:
       warp.m_predRF[threadID][m_destPReg] = warp.m_regRF[threadID][m_srcReg[0]];
-      DEBUG_PRINTF(("p[%u][%u](0x%x) = !r[%u][%d](%lu)\n", \
-                    threadID, m_destPReg, warp.m_predRF[threadID][m_destPReg], \
-                    threadID, m_srcReg[0], warp.m_regRF[threadID][m_srcReg[0]]));
+      DEBUG_PRINTF(("RTOP p%u[%u](0x%x) r%u[%u](0x%"PRIx64")\n", \
+                    m_destPReg, threadID, warp.m_predRF[threadID][m_destPReg], \
+                    m_srcReg[0], threadID,  warp.m_regRF[threadID][m_srcReg[0]]));
       break; 
     case ISNEG:
       warp.m_predRF[threadID][m_destPReg] = (1ll << (WORD_SIZE_IN_BITS-1)) & warp.m_regRF[threadID][m_srcReg[0]];
-      DEBUG_PRINTF(("p[%u][%u](0x%x) ISNEG r[%u][%d](%ld)\n", \
-                    threadID, m_destPReg, warp.m_predRF[threadID][m_destPReg], \
-                    threadID, m_srcReg[0], (long)warp.m_regRF[threadID][m_srcReg[0]]));
+      DEBUG_PRINTF(("ISNEG p%u[%u](0x%x) r%u[%u](0x%"PRIx64")\n", \
+                    m_destPReg, threadID, warp.m_predRF[threadID][m_destPReg], \
+                    m_srcReg[0], threadID, (long)warp.m_regRF[threadID][m_srcReg[0]]));
       break;
     case ISZERO:
       warp.m_predRF[threadID][m_destPReg] = !warp.m_regRF[threadID][m_srcReg[0]];
-      DEBUG_PRINTF(("p[%u][%u](0x%x) ISZERO r[%u][%d](%lu)\n", \
+      DEBUG_PRINTF(("ISZERO p[%u][%u](0x%x) r[%u][%d](0x%"PRIx64")\n", \
                     threadID, m_destPReg, warp.m_predRF[threadID][m_destPReg], \
                     threadID, m_srcReg[0], warp.m_regRF[threadID][m_srcReg[0]]));
       break;
@@ -295,46 +308,82 @@ void instruction_c::execute(warp_c &warp, unsigned int threadID) {
     case ADDI:
       warp.m_regRF[threadID][m_destReg] = warp.m_regRF[threadID][m_srcReg[0]] + m_srcImm;
       warp.m_regRF[threadID][m_destReg] &= (pow2(WORD_SIZE_IN_BITS) - 1 );
-      DEBUG_PRINTF(("r[%u][%u](%lu) = r[%u][%u](%lu) + Imm(%lu)\n", \
-                    threadID, m_destReg, warp.m_regRF[threadID][m_destReg], \
-                    threadID, m_srcReg[0], warp.m_regRF[threadID][m_srcReg[0]], \
+      DEBUG_PRINTF(("ADDI r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64") 0x%"PRIx64"\n", \
+                    m_destReg, threadID, warp.m_regRF[threadID][m_destReg], \
+                    m_srcReg[0], threadID, warp.m_regRF[threadID][m_srcReg[0]], \
                     m_srcImm));
       break;
     case SUBI:
       warp.m_regRF[threadID][m_destReg] = warp.m_regRF[threadID][m_srcReg[0]] - m_srcImm;
       warp.m_regRF[threadID][m_destReg] &= (pow2(WORD_SIZE_IN_BITS) - 1 );
+      DEBUG_PRINTF(("SUBI r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64") 0x%"PRIx64"\n", \
+                    m_destReg, threadID, warp.m_regRF[threadID][m_destReg], \
+                    m_srcReg[0], threadID, warp.m_regRF[threadID][m_srcReg[0]], \
+                    m_srcImm));
       break;
     case MULI:
       warp.m_regRF[threadID][m_destReg] = warp.m_regRF[threadID][m_srcReg[0]] * m_srcImm;
       warp.m_regRF[threadID][m_destReg] &= (pow2(WORD_SIZE_IN_BITS) - 1 );
+      DEBUG_PRINTF(("MULI r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64") 0x%"PRIx64"\n", \
+                    m_destReg, threadID, warp.m_regRF[threadID][m_destReg], \
+                    m_srcReg[0], threadID, warp.m_regRF[threadID][m_srcReg[0]], \
+                    m_srcImm));
       break;
     case DIVI:
       warp.m_regRF[threadID][m_destReg] = warp.m_regRF[threadID][m_srcReg[0]] / m_srcImm;
+      DEBUG_PRINTF(("DIVI r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64") 0x%"PRIx64"\n", \
+                    m_destReg, threadID, warp.m_regRF[threadID][m_destReg], \
+                    m_srcReg[0], threadID, warp.m_regRF[threadID][m_srcReg[0]], \
+                    m_srcImm));
       break;
     case MODI:
       warp.m_regRF[threadID][m_destReg] = warp.m_regRF[threadID][m_srcReg[0]] % m_srcImm;
+      DEBUG_PRINTF(("MODI r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64") 0x%"PRIx64"\n", \
+                    m_destReg, threadID, warp.m_regRF[threadID][m_destReg], \
+                    m_srcReg[0], threadID, warp.m_regRF[threadID][m_srcReg[0]], \
+                    m_srcImm));
       break;
     case SHRI:
       warp.m_regRF[threadID][m_destReg] = Word_s(warp.m_regRF[threadID][m_srcReg[0]]) >> m_srcImm;
+      DEBUG_PRINTF(("SHRI r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64") 0x%"PRIx64"\n", \
+                    m_destReg, threadID, warp.m_regRF[threadID][m_destReg], \
+                    m_srcReg[0], threadID, warp.m_regRF[threadID][m_srcReg[0]], \
+                    m_srcImm));
       break;
     case SHLI:
       warp.m_regRF[threadID][m_destReg] = warp.m_regRF[threadID][m_srcReg[0]] << m_srcImm;
       warp.m_regRF[threadID][m_destReg] &= (pow2(WORD_SIZE_IN_BITS) - 1 );
+      DEBUG_PRINTF(("SHLI r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64") 0x%"PRIx64"\n", \
+                    m_destReg, threadID, warp.m_regRF[threadID][m_destReg], \
+                    m_srcReg[0], threadID, warp.m_regRF[threadID][m_srcReg[0]], \
+                    m_srcImm));
       break;
     case ANDI:
       warp.m_regRF[threadID][m_destReg] = warp.m_regRF[threadID][m_srcReg[0]] & m_srcImm;
+      DEBUG_PRINTF(("ANDI r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64") 0x%"PRIx64"\n", \
+                    m_destReg, threadID, warp.m_regRF[threadID][m_destReg], \
+                    m_srcReg[0], threadID, warp.m_regRF[threadID][m_srcReg[0]], \
+                    m_srcImm));
       break;
     case ORI:
       warp.m_regRF[threadID][m_destReg] = warp.m_regRF[threadID][m_srcReg[0]] | m_srcImm;
+      DEBUG_PRINTF(("ORI r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64") 0x%"PRIx64"\n", \
+                    m_destReg, threadID, warp.m_regRF[threadID][m_destReg], \
+                    m_srcReg[0], threadID, warp.m_regRF[threadID][m_srcReg[0]], \
+                    m_srcImm));
       break; 
     case XORI:
       warp.m_regRF[threadID][m_destReg] = warp.m_regRF[threadID][m_srcReg[0]] ^ m_srcImm;
+      DEBUG_PRINTF(("XORI r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64") 0x%"PRIx64"\n", \
+                    m_destReg, threadID, warp.m_regRF[threadID][m_destReg], \
+                    m_srcReg[0], threadID, warp.m_regRF[threadID][m_srcReg[0]], \
+                    m_srcImm));
       break;
     case LDI:
       warp.m_regRF[threadID][m_destReg] = m_srcImm;
       warp.m_regRF[threadID][m_destReg] &= (pow2(WORD_SIZE_IN_BITS) - 1 );
-      DEBUG_PRINTF(("r[%u][%u](%lu) = Imm(%lu)\n", \
-                    threadID, m_destReg, warp.m_regRF[threadID][m_destReg], \
+      DEBUG_PRINTF(("LDI r%u[%u](0x%"PRIx64") 0x%"PRIx64"\n", \
+                    m_destReg, threadID, warp.m_regRF[threadID][m_destReg], \
                     m_srcImm));
       break;
 
@@ -342,45 +391,91 @@ void instruction_c::execute(warp_c &warp, unsigned int threadID) {
     case ADD:
       warp.m_regRF[threadID][m_destReg] = warp.m_regRF[threadID][m_srcReg[0]] + warp.m_regRF[threadID][m_srcReg[1]];
       warp.m_regRF[threadID][m_destReg] &= (pow2(WORD_SIZE_IN_BITS) - 1 );
+      DEBUG_PRINTF(("ADD r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64")\n", \
+                    m_destReg, threadID, warp.m_regRF[threadID][m_destReg], \
+                    m_srcReg[0], threadID, warp.m_regRF[threadID][m_srcReg[0]], \
+                    m_srcReg[1], threadID, warp.m_regRF[threadID][m_srcReg[1]]));
       break;
     case SUB:
       warp.m_regRF[threadID][m_destReg] = warp.m_regRF[threadID][m_srcReg[0]] - warp.m_regRF[threadID][m_srcReg[1]];
       warp.m_regRF[threadID][m_destReg] &= (pow2(WORD_SIZE_IN_BITS) - 1 );
+      DEBUG_PRINTF(("SUB r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64")\n", \
+                    m_destReg, threadID, warp.m_regRF[threadID][m_destReg], \
+                    m_srcReg[0], threadID, warp.m_regRF[threadID][m_srcReg[0]], \
+                    m_srcReg[1], threadID, warp.m_regRF[threadID][m_srcReg[1]]));
       break;
     case MUL:
       warp.m_regRF[threadID][m_destReg] = warp.m_regRF[threadID][m_srcReg[0]] * warp.m_regRF[threadID][m_srcReg[1]];
       warp.m_regRF[threadID][m_destReg] &= (pow2(WORD_SIZE_IN_BITS) - 1 );
+      DEBUG_PRINTF(("MUL r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64")\n", \
+                    m_destReg, threadID, warp.m_regRF[threadID][m_destReg], \
+                    m_srcReg[0], threadID, warp.m_regRF[threadID][m_srcReg[0]], \
+                    m_srcReg[1], threadID, warp.m_regRF[threadID][m_srcReg[1]]));
       break;
     case DIV:
       warp.m_regRF[threadID][m_destReg] = warp.m_regRF[threadID][m_srcReg[0]] / warp.m_regRF[threadID][m_srcReg[1]];
+      DEBUG_PRINTF(("DIV r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64")\n", \
+                    m_destReg, threadID, warp.m_regRF[threadID][m_destReg], \
+                    m_srcReg[0], threadID, warp.m_regRF[threadID][m_srcReg[0]], \
+                    m_srcReg[1], threadID, warp.m_regRF[threadID][m_srcReg[1]]));
       break;
     case SHL:
       warp.m_regRF[threadID][m_destReg] = warp.m_regRF[threadID][m_srcReg[0]] << warp.m_regRF[threadID][m_srcReg[1]];
       warp.m_regRF[threadID][m_destReg] &= (pow2(WORD_SIZE_IN_BITS) - 1 );
+      DEBUG_PRINTF(("SHL r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64")\n", \
+                    m_destReg, threadID, warp.m_regRF[threadID][m_destReg], \
+                    m_srcReg[0], threadID, warp.m_regRF[threadID][m_srcReg[0]], \
+                    m_srcReg[1], threadID, warp.m_regRF[threadID][m_srcReg[1]]));
       break;
     case SHR:
       warp.m_regRF[threadID][m_destReg] = Word_s(warp.m_regRF[threadID][m_srcReg[0]]) >> warp.m_regRF[threadID][m_srcReg[1]];
       warp.m_regRF[threadID][m_destReg] &= (pow2(WORD_SIZE_IN_BITS) - 1 );
+      DEBUG_PRINTF(("SHR r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64")\n", \
+                    m_destReg, threadID, warp.m_regRF[threadID][m_destReg], \
+                    m_srcReg[0], threadID, warp.m_regRF[threadID][m_srcReg[0]], \
+                    m_srcReg[1], threadID, warp.m_regRF[threadID][m_srcReg[1]]));
       break;
     case MOD:
       warp.m_regRF[threadID][m_destReg] = warp.m_regRF[threadID][m_srcReg[0]] % warp.m_regRF[threadID][m_srcReg[1]];
+      DEBUG_PRINTF(("MOD r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64")\n", \
+                    m_destReg, threadID, warp.m_regRF[threadID][m_destReg], \
+                    m_srcReg[0], threadID, warp.m_regRF[threadID][m_srcReg[0]], \
+                    m_srcReg[1], threadID, warp.m_regRF[threadID][m_srcReg[1]]));
       break;
     case AND:
       warp.m_regRF[threadID][m_destReg] = warp.m_regRF[threadID][m_srcReg[0]] & warp.m_regRF[threadID][m_srcReg[1]];
+      DEBUG_PRINTF(("AND r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64")\n", \
+                    m_destReg, threadID, warp.m_regRF[threadID][m_destReg], \
+                    m_srcReg[0], threadID, warp.m_regRF[threadID][m_srcReg[0]], \
+                    m_srcReg[1], threadID, warp.m_regRF[threadID][m_srcReg[1]]));
       break;
     case OR:
       warp.m_regRF[threadID][m_destReg] = warp.m_regRF[threadID][m_srcReg[0]] | warp.m_regRF[threadID][m_srcReg[1]];
+      DEBUG_PRINTF(("OR r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64")\n", \
+                    m_destReg, threadID, warp.m_regRF[threadID][m_destReg], \
+                    m_srcReg[0], threadID, warp.m_regRF[threadID][m_srcReg[0]], \
+                    m_srcReg[1], threadID, warp.m_regRF[threadID][m_srcReg[1]]));
       break;
     case XOR:
       warp.m_regRF[threadID][m_destReg] = warp.m_regRF[threadID][m_srcReg[0]] ^ warp.m_regRF[threadID][m_srcReg[1]];
+      DEBUG_PRINTF(("XOR r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64")\n", \
+                    m_destReg, threadID, warp.m_regRF[threadID][m_destReg], \
+                    m_srcReg[0], threadID, warp.m_regRF[threadID][m_srcReg[0]], \
+                    m_srcReg[1], threadID, warp.m_regRF[threadID][m_srcReg[1]]));
       break;
     case NEG:
       warp.m_regRF[threadID][m_destReg] = -(Word_s)warp.m_regRF[threadID][m_srcReg[0]];
       warp.m_regRF[threadID][m_destReg] &= (pow2(WORD_SIZE_IN_BITS) - 1 );
+      DEBUG_PRINTF(("NEG r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64")\n", \
+                    m_destReg, threadID, warp.m_regRF[threadID][m_destReg], \
+                    m_srcReg[0], threadID, warp.m_regRF[threadID][m_srcReg[0]]));
       break;
     case NOT:
       warp.m_regRF[threadID][m_destReg] = ~(Word_s)warp.m_regRF[threadID][m_srcReg[0]];
       warp.m_regRF[threadID][m_destReg] &= (pow2(WORD_SIZE_IN_BITS) - 1 );
+      DEBUG_PRINTF(("NOT r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64")\n", \
+                    m_destReg, threadID, warp.m_regRF[threadID][m_destReg], \
+                    m_srcReg[0], threadID, warp.m_regRF[threadID][m_srcReg[0]]));
       break;
 
     //Floating Point
@@ -396,10 +491,34 @@ void instruction_c::execute(warp_c &warp, unsigned int threadID) {
 
     //Contorl Flow
     case JMPI:
+      warp.m_next_pc[threadID] = warp.m_pc[threadID] + STEP_PC + m_srcImm;
+      pc_changed = true;
+      DEBUG_PRINTF(("JMPI 0x%"PRIx64" (pc=0x%"PRIx64" next_pc=0x%"PRIx64")\n", \
+                    m_srcImm, warp.m_pc[threadID], warp.m_next_pc[threadID]));
+      break;
     case JMPR:
+      warp.m_next_pc[threadID] = warp.m_regRF[threadID][m_srcReg[0]] + STEP_PC;
+      pc_changed = true;
+      DEBUG_PRINTF(("JMPR r%u[%u](0x%"PRIx64") (pc=0x%"PRIx64" next_pc=0x%"PRIx64")\n", \
+                    m_srcReg[0], threadID, warp.m_regRF[threadID][m_srcReg[0]], \
+                    warp.m_pc[threadID], warp.m_next_pc[threadID]));
+      break;
     case JALI:
+      warp.m_regRF[threadID][m_destReg] = warp.m_pc[threadID] + STEP_PC;
+      warp.m_next_pc[threadID] = warp.m_pc[threadID] + STEP_PC + m_srcImm;
+      pc_changed = true;
+      DEBUG_PRINTF(("JALI r%u[%u](0x%"PRIx64") 0x%"PRIx64" (pc=0x%"PRIx64" next_pc=0x%"PRIx64")\n", \
+                    m_destReg, threadID, warp.m_regRF[threadID][m_destReg], \
+                    m_srcImm, warp.m_pc[threadID], warp.m_next_pc[threadID]));
+      break;
     case JALR:
-      
+      warp.m_regRF[threadID][m_destReg] = warp.m_pc[threadID] + STEP_PC;
+      warp.m_next_pc[threadID] = warp.m_pc[threadID] + warp.m_regRF[threadID][m_srcReg[0]];
+      pc_changed = true;
+      DEBUG_PRINTF(("JALR r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64") (pc=0x%"PRIx64" next_pc=0x%"PRIx64")\n", \
+                    m_destReg, threadID, warp.m_regRF[threadID][m_destReg], \
+                    m_srcReg[0], threadID, warp.m_regRF[threadID][m_srcReg[0]], \
+                    warp.m_pc[threadID], warp.m_next_pc[threadID]));
       break;
 
     //SIMD Control
@@ -429,4 +548,18 @@ void instruction_c::execute(warp_c &warp, unsigned int threadID) {
   }
 
   //Update PC
+  if (!pc_changed)
+    warp.m_next_pc[threadID] = warp.m_pc[threadID] + STEP_PC;
+  warp.m_pc[threadID] = warp.m_next_pc[threadID];
+
+  //Debug Register Stats
+  DEBUG_PRINT("Register States:")
+  for(int i=0; i<GPR_REG_NUM; i++)
+    DEBUG_PRINTF(("\tr%u %"PRIx64"\n", i, warp.m_regRF[threadID][i]));
+  DEBUG_PRINT("Predicate Register States:")
+  DEBUG_PRINTF(("\t"));
+  for(int i=0; i<PRED_REG_NUM; i++)
+    DEBUG_PRINTF(("%x", warp.m_predRF[threadID][i]));
+  DEBUG_PRINTF(("\n"));
+
 }
