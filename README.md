@@ -7,7 +7,9 @@ Simply in root do make.
 
 ##How to execute
 Currently the executable takes binary file and output file. The output will be saved in a file of `OUTPUT_TO_FILE` is defined in `globals.h`.
+
 To execute:
+
 `./harp_emulator [binary_file] [output_file]`
 
 ##Clean
