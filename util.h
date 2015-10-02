@@ -24,6 +24,7 @@ class binReader_c {
     void set_filename(string fileName);
     Word get_inst(Addr PC);
     Word get_data(Addr dataAddr);
+    void write_data(Addr dataAddr, Word data);
     Byte get_byte(Addr addr);
 
   private:
