@@ -7,7 +7,8 @@
 
 #define pow2(X) (Word)pow(2,X)
 
-#define DEBUG 1
+//#define DEBUG
+//#define DEBUG_PC
 
 #ifdef DEBUG
 #define DEBUG_PRINT(X) cout << X << endl;
@@ -15,6 +16,12 @@
 #else
 #define DEBUG_PRINT(X) do {} while (0);
 #define DEBUG_PRINTF(x) do {} while (0);
+#endif
+
+#ifdef DEBUG_PC
+#define DEBUG_PC_PRINT(X) cout << hex << X << dec << endl;
+#else
+#define DEBUG_PC_PRINT(X) do {} while (0);
 #endif
 
 /* 4w8/8/1/1 to 8w/64/64/64/64 */

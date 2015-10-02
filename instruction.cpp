@@ -208,6 +208,8 @@ void instruction_c::execute(warp_c &warp, unsigned int threadID) {
   if(m_predicated)
     DEBUG_PRINTF(("@p%u\n", m_predReg));
 
+  DEBUG_PC_PRINT(warp.m_pc[threadID]);
+
   bool pc_changed = false;
   Word memoryAddr;
 
@@ -241,8 +243,11 @@ void instruction_c::execute(warp_c &warp, unsigned int threadID) {
 
     //Memory
     case ST:
-      memoryAddr = warp.m_regRF[threadID][m_srcReg[1]] + m_srcImm;
-      warp.m_bin->write_data(memoryAddr, warp.m_regRF[threadID][m_srcReg[0]]);
+      memoryAddr = warp.m_regRF[threadID][m_srcReg[1]] + m_srcImm;  
+      if (memoryAddr == ( (1LL << (INST_SIZE_BITS-1))) ) 
+        cout <<  (char)warp.m_regRF[threadID][m_srcReg[0]];
+      else 
+        warp.m_bin->write_data(memoryAddr, warp.m_regRF[threadID][m_srcReg[0]]);
       DEBUG_PRINTF(("ST r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64") 0x%"PRIx64" (Addr:0x%"PRIx64")\n", \
                     m_srcReg[0], threadID, warp.m_regRF[threadID][m_destReg], \
                     m_srcReg[1], threadID, warp.m_regRF[threadID][m_srcReg[0]], \
@@ -498,7 +503,7 @@ void instruction_c::execute(warp_c &warp, unsigned int threadID) {
                     m_srcImm, warp.m_pc[threadID], warp.m_next_pc[threadID]));
       break;
     case JMPR:
-      warp.m_next_pc[threadID] = warp.m_regRF[threadID][m_srcReg[0]] + STEP_PC;
+      warp.m_next_pc[threadID] = warp.m_regRF[threadID][m_srcReg[0]];
       pc_changed = true;
       DEBUG_PRINTF(("JMPR r%u[%u](0x%"PRIx64") (pc=0x%"PRIx64" next_pc=0x%"PRIx64")\n", \
                     m_srcReg[0], threadID, warp.m_regRF[threadID][m_srcReg[0]], \
@@ -513,7 +518,7 @@ void instruction_c::execute(warp_c &warp, unsigned int threadID) {
                     m_srcImm, warp.m_pc[threadID], warp.m_next_pc[threadID]));
       break;
     case JALR:
-      warp.m_regRF[threadID][m_destReg] = warp.m_pc[threadID] + STEP_PC;
+      warp.m_regRF[threadID][m_destReg] = warp.m_pc[threadID];
       warp.m_next_pc[threadID] = warp.m_pc[threadID] + warp.m_regRF[threadID][m_srcReg[0]];
       pc_changed = true;
       DEBUG_PRINTF(("JALR r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64") (pc=0x%"PRIx64" next_pc=0x%"PRIx64")\n", \
@@ -553,6 +558,11 @@ void instruction_c::execute(warp_c &warp, unsigned int threadID) {
   //Update PC
   if (!pc_changed)
     warp.m_next_pc[threadID] = warp.m_pc[threadID] + STEP_PC;
+
+  //Jump to Same PC (infinite loop :: JMPI -4)
+  if (warp.m_pc[threadID] == warp.m_next_pc[threadID])
+    exec_finish = true;
+
   warp.m_pc[threadID] = warp.m_next_pc[threadID];
 
   //Debug Register Stats
