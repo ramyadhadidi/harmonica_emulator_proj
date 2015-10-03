@@ -1,4 +1,13 @@
-#include "util.h"
+/**
+ * @class binReader
+ * @brief binary Reader class, should be a single instance in all simulation
+ * @file util.h util.cpp
+ * @author Ramyad Hadidi
+ * @data 2015-10
+ */
+
+
+#include "binReader.h"
 
 binReader_c::binReader_c() : 
    m_fileName("") {}
