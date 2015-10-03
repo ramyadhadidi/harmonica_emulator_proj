@@ -1,3 +1,11 @@
+/**
+ * @class binReader
+ * @brief binary Reader class, should be a single instance in all simulation
+ * @file util.h util.cpp
+ * @author Ramyad Hadidi
+ * @data 2015-10
+ */
+
 #ifndef UTIL_H
 #define UTIL_H
 
