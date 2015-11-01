@@ -85,7 +85,7 @@ void warp_c::step() {
   if (m_activeThreads != m_nextActiveThreads) {
     DEBUG_WARP_PRINTF(("warpID %u ActiveThreads changed from %"PRId64" to %"PRId64"\n", m_warpId, m_activeThreads, m_nextActiveThreads));
     m_activeThreads = m_nextActiveThreads;
-    if (m_nextActiveThreads > WARP_SIZE) {
+    if(m_nextActiveThreads > WARP_SIZE) {
       cerr << "Error: attempt to spawn " << m_nextActiveThreads << " threads\n";
       exit(1);
     }
