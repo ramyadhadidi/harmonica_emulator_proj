@@ -39,7 +39,10 @@ class core_c {
     string m_binary_filename;
     binReader_c m_bin;
 
-    warp_c* SM;
+    warp_c* m_warps;
+
+    /**ActiveSM**/
+    bool m_activeWarp[SIMD_LANE_NUM];
 
 };
 

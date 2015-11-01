@@ -1,2 +1,4 @@
 *.o
 *.bin
+bin/*
+harp_emulator

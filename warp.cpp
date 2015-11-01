@@ -17,6 +17,8 @@ warp_c::warp_c() :
     m_pc[i] = 0;
     m_next_pc[i] = 0;
   }
+  m_activeThreads = 1;
+  m_nextActiveThreads = 1;
 }
 
 warp_c::warp_c(const warp_c &warp, binReader_c* bin, unsigned int warpId) {
@@ -29,6 +31,8 @@ warp_c::warp_c(const warp_c &warp, binReader_c* bin, unsigned int warpId) {
       for (int j=0; j<PRED_REG_NUM; j++)
         m_predRF[i][j] = 0;
     }
+    m_activeThreads = 1;
+    m_nextActiveThreads = 1;
 
     m_bin = bin;
     m_warpId = warpId;
@@ -43,6 +47,7 @@ warp_c& warp_c::operator=(const warp_c& warp) {
         this->m_regRF[i][j] = 0;
       for (int j=0; j<PRED_REG_NUM; j++)
         this->m_predRF[i][j] = 0;
+      this->m_activeThreads = warp.m_activeThreads;
   }
 
   this->m_bin = warp.m_bin;
@@ -60,18 +65,29 @@ warp_c::warp_c(binReader_c* bin, unsigned int warpId) {
     for (int j=0; j<PRED_REG_NUM; j++)
       m_predRF[i][j] = 0;
   }
+  m_activeThreads = 1;
+  m_nextActiveThreads = 1;
 
   m_bin = bin;
   m_warpId = warpId;
 }
 
 void warp_c::step() {
-  for (unsigned int threadId=0; threadId<WARP_SIZE; threadId++) {
+  for (unsigned int threadId=0; threadId<m_activeThreads; threadId++) {
     /// get instruction binary
     Word inst_binary = m_bin->get_inst(m_pc[threadId]);
     /// create and instance for the instruction (get all instruction's parameters)
     instruction_c inst = instruction_c(inst_binary);
     /// execute it
     inst.execute(*this, threadId);
+  }
+
+  if (m_activeThreads != m_nextActiveThreads) {
+    DEBUG_WARP_PRINTF(("warpID %u ActiveThreads changed from %"PRId64" to %"PRId64"\n", m_warpId, m_activeThreads, m_nextActiveThreads));
+    m_activeThreads = m_nextActiveThreads;
+    if (m_nextActiveThreads > WARP_SIZE) {
+      cerr << "Error: attempt to spawn " << m_nextActiveThreads << " threads\n";
+      exit(1);
+    }
   }
 }
