@@ -212,7 +212,7 @@ instruction_c::instruction_c(Word inst) :
 void instruction_c::execute(warp_c &warp, unsigned int threadID) {
   //Debug Messages
   DEBUG_PRINTF(("\n"));
-  DEBUG_PRINTF(("pc: 0x%"PRIx64"\n", warp.m_pc[threadID]));
+  DEBUG_PRINTF(("pc: 0x%"PRIx64" wpID:%u thID:%u\n", warp.m_pc[threadID], warp.m_warpId, threadID));
 
   if(m_predicated)
     DEBUG_PRINTF(("@p%u\n", m_predReg));
@@ -545,9 +545,39 @@ void instruction_c::execute(warp_c &warp, unsigned int threadID) {
 
     //SIMD Control
     case CLONE:
+      for (int i=0; i<GPR_REG_NUM; i++)
+        warp.m_regRF[m_srcReg[0]][i] = warp.m_regRF[threadID][i];
+      printf("CLONE %u\n", m_srcReg[0]);
+      break;
     case JALIS:
+      warp.m_nextActiveThreads = warp.m_regRF[threadID][m_srcReg[0]];
+      warp.m_regRF[threadID][m_destReg] = warp.m_pc[threadID] + STEP_PC;
+      warp.m_next_pc[threadID] = warp.m_pc[threadID] + STEP_PC + m_srcImm;
+      pc_changed = true;
+      printf("JALIS r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64") 0x%"PRIx64" (pc=0x%"PRIx64" next_pc=0x%"PRIx64")\n", \
+                    m_destReg, threadID, warp.m_regRF[threadID][m_destReg], \
+                    m_srcReg[0], threadID, warp.m_regRF[threadID][m_srcReg[0]], \
+                    m_srcImm, warp.m_pc[threadID], warp.m_next_pc[threadID]);
+      break;
     case JALRS:
+      warp.m_nextActiveThreads = warp.m_regRF[threadID][m_srcReg[0]];
+      warp.m_regRF[threadID][m_destReg] = warp.m_pc[threadID];
+      warp.m_next_pc[threadID] = warp.m_pc[threadID] + warp.m_regRF[threadID][m_srcReg[1]];
+      pc_changed = true;
+      printf("JALRS r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64") (pc=0x%"PRIx64" next_pc=0x%"PRIx64")\n", \
+                    m_destReg, threadID, warp.m_regRF[threadID][m_destReg], \
+                    m_srcReg[0], threadID, warp.m_regRF[threadID][m_srcReg[0]], \
+                    m_srcReg[1], threadID, warp.m_regRF[threadID][m_srcReg[1]], \
+                    warp.m_pc[threadID], warp.m_next_pc[threadID]);
+      break;
     case JMPRT:
+      warp.m_nextActiveThreads = 1;
+      warp.m_next_pc[threadID] = warp.m_pc[threadID] + warp.m_regRF[threadID][m_srcReg[0]];
+      pc_changed = true;
+      printf("JMPRT r%u[%u](0x%"PRIx64") (pc=0x%"PRIx64" next_pc=0x%"PRIx64")\n", \
+                    m_srcReg[0], threadID, warp.m_regRF[threadID][m_srcReg[0]], \
+                    warp.m_pc[threadID], warp.m_next_pc[threadID]);
+      break;
     case SPLIT:
     case JOIN:
       cout << "Unsupported instruction in this version " << instTable[m_op].opString << endl;
@@ -590,5 +620,8 @@ void instruction_c::execute(warp_c &warp, unsigned int threadID) {
   for(int i=0; i<PRED_REG_NUM; i++)
     DEBUG_PRINTF(("%x", warp.m_predRF[threadID][i]));
   DEBUG_PRINTF(("\n"));
+  DEBUG_PRINTF(("# Active Threads: %"PRId64"\n", warp.m_activeThreads));
+  if(warp.m_activeThreads != warp.m_nextActiveThreads)
+    DEBUG_PRINTF(("# Next Active Threads: %"PRId64"\n", warp.m_nextActiveThreads));
 
 }

@@ -61,6 +61,10 @@ class warp_c {
     Word m_regRF[WARP_SIZE][GPR_REG_NUM];
     /** Predicate resiter file */
     bool m_predRF[WARP_SIZE][PRED_REG_NUM];
+
+    /**ActiveThreads**/
+    Size m_activeThreads;
+    Size m_nextActiveThreads;
 };
 
 #endif

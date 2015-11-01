@@ -18,11 +18,14 @@
 
 #define pow2(X) (Word)pow(2,X)
 
-/** @brief Prints all debug messages */
+/** @brief Prints instructions debug messages */
 //#define DEBUG
 
 /** @brief prints just dynamic PC of threads */
 //#define DEBUG_PC
+
+/** @brief prints warp debug messages */
+#define DEBUG_WARP
 
 #ifdef DEBUG
 #define DEBUG_PRINT(X) cout << X << endl;
@@ -32,6 +35,14 @@
 #define DEBUG_PRINTF(x) do {} while (0);
 #endif
 
+#ifdef DEBUG_WARP
+#define DEBUG_WARP_PRINT(X) cout << X << endl;
+#define DEBUG_WARP_PRINTF(x) printf x;
+#else
+#define DEBUG_WARP_PRINT(X) do {} while (0);
+#define DEBUG_WARP_PRINTF(x) do {} while (0);
+#endif
+
 #ifdef DEBUG_PC
 #define DEBUG_PC_PRINT(X) cout << hex << X << dec << endl;
 #else
@@ -39,7 +50,7 @@
 #endif
 
 /** @brief save output to the file at argv[2], else to stdout */
-#define OUTPUT_TO_FILE 
+//#define OUTPUT_TO_FILE 
 
 ////////////////////////////////////////////////////////////////
 // Harp Architecture Setting                                  //
