@@ -16,10 +16,13 @@
 #include <iostream>
 #include <fstream>
 
+#include <map>
+#include <set>
+
 #define pow2(X) (Word)pow(2,X)
 
 /** @brief Prints instructions debug messages */
-//#define DEBUG
+#define DEBUG
 
 /** @brief prints just dynamic PC of threads */
 //#define DEBUG_PC
@@ -71,7 +74,7 @@
 #define GPR_REG_NUM 8                                         //
 #define PRED_REG_NUM 8                                        //
 #define SIMD_LANE_NUM 8                                       //
-#define WARP_SIZE 8                                           //
+#define WARP_SIZE 1                                           //
                                                               //
 ////////////////////////////////////////////////////////////////
 

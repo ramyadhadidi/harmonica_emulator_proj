@@ -8,8 +8,8 @@ CXX =g++
 CXXFALGS = -c -Wall -g
 
 
-all: binReader.o instruction.o warp.o core.o main.o 
-	$(CXX) main.o binReader.o instruction.o warp.o core.o -o harp_emulator
+all: binReader.o instruction.o core.o main.o 
+	$(CXX) main.o binReader.o instruction.o core.o -o harp_emulator
 
 main.o: main.cpp globals.h
 	$(CXX) $(CXXFALGS) main.cpp
@@ -19,9 +19,6 @@ binReader.o: binReader.cpp globals.h
 
 instruction.o: instruction.cpp globals.h
 	$(CXX) $(CXXFALGS) instruction.cpp
-
-warp.o: warp.cpp globals.h
-	$(CXX) $(CXXFALGS) warp.cpp
 
 core.o: core.cpp globals.h
 	$(CXX) $(CXXFALGS) core.cpp
