@@ -18,16 +18,14 @@
 
 #include <map>
 #include <set>
+#include <stack>
 
 #define pow2(X) (Word)pow(2,X)
 
 /** @brief Prints instructions debug messages */
-#define DEBUG
+//#define DEBUG
 
-/** @brief prints just dynamic PC of threads */
-//#define DEBUG_PC
-
-/** @brief prints warp debug messages */
+/** @brief prints warp debug messages: PC, warp States */
 #define DEBUG_WARP
 
 #ifdef DEBUG
@@ -44,12 +42,6 @@
 #else
 #define DEBUG_WARP_PRINT(X) do {} while (0);
 #define DEBUG_WARP_PRINTF(x) do {} while (0);
-#endif
-
-#ifdef DEBUG_PC
-#define DEBUG_PC_PRINT(X) cout << hex << X << dec << endl;
-#else
-#define DEBUG_PC_PRINT(X) do {} while (0);
 #endif
 
 /** @brief save output to the file at argv[2], else to stdout */

@@ -50,6 +50,7 @@ warp_c::warp_c() :
       m_regRF[i][j] = 0;
     for (int j=0; j<PRED_REG_NUM; j++)
       m_predRF[i][j] = 0;
+    m_threadMask[i] = true;
   }
   m_pc = 0;
   m_next_pc = 0;
@@ -64,6 +65,7 @@ warp_c::warp_c(const warp_c &warp, core_c *core, binReader_c* bin, unsigned int 
         m_regRF[i][j] = 0;
       for (int j=0; j<PRED_REG_NUM; j++)
         m_predRF[i][j] = 0;
+      m_threadMask[i] = true;
     }
     m_pc = 0;
     m_next_pc = 0;
@@ -83,6 +85,7 @@ warp_c& warp_c::operator=(const warp_c& warp) {
       for (int j=0; j<PRED_REG_NUM; j++)
         this->m_predRF[i][j] = 0;
       this->m_activeThreads = warp.m_activeThreads;
+      this->m_threadMask[i] = warp.m_threadMask[i];
   }
   this->m_pc = warp.m_pc;
   this->m_next_pc = warp.m_next_pc;
@@ -99,6 +102,7 @@ warp_c::warp_c(core_c *core, binReader_c* bin, unsigned int warpId) {
       m_regRF[i][j] = 0;
     for (int j=0; j<PRED_REG_NUM; j++)
       m_predRF[i][j] = 0;
+    m_threadMask[i] = true;
   }
   m_pc = 0;
   m_next_pc = 0;
@@ -111,6 +115,14 @@ warp_c::warp_c(core_c *core, binReader_c* bin, unsigned int warpId) {
 }
 
 void warp_c::step() {
+  //Debug
+  DEBUG_WARP_PRINTF(("|--> WarpID %u: PC 0x%"PRIx64"\n", m_warpId, m_pc));
+  DEBUG_WARP_PRINTF(("|--> WarpID %u: # Active Threads %"PRId64"\n", m_warpId, m_activeThreads));
+  DEBUG_WARP_PRINTF(("|--> WarpID %u: Thread Masks\t", m_warpId));
+  for (int _threadID=0; _threadID<SIMD_LANE_NUM; _threadID++)
+    DEBUG_WARP_PRINTF(("%x ", m_threadMask[_threadID]));
+  DEBUG_WARP_PRINTF(("\n"));
+
   //Exectuion
   for (unsigned int threadId=0; threadId<m_activeThreads; threadId++) {
     /// get instruction binary
@@ -131,7 +143,7 @@ void warp_c::step() {
 
   // Active Threads
   if (m_activeThreads != m_nextActiveThreads) {
-    DEBUG_WARP_PRINTF(("warpID %u ActiveThreads changed from %"PRId64" to %"PRId64"\n", m_warpId, m_activeThreads, m_nextActiveThreads));
+    DEBUG_WARP_PRINTF(("|--> WarpID %u: #Active Threads changed from %"PRId64" to %"PRId64"\n", m_warpId, m_activeThreads, m_nextActiveThreads));
     m_activeThreads = m_nextActiveThreads;
     if(m_nextActiveThreads > SIMD_LANE_NUM) {
       cerr << "Error: attempt to spawn " << m_nextActiveThreads << " threads\n";
