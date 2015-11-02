@@ -84,7 +84,7 @@ Byte binReader_c::get_byte(Addr addr) {
 }
 
 void binReader_c::write_data(Addr dataAddr, Word data) {
-  Word original_data = data;
+  DEBUG_PRINT("Write Data[" << hex << dataAddr << "] = " << hex << data << dec);
   if (dataAddr+WORD_SIZE_IN_BYTE-1 > binary_stream.size()) {
     cerr << "dataAddr out of memory (Write Data)" << endl;
     exit(1);
@@ -95,7 +95,5 @@ void binReader_c::write_data(Addr dataAddr, Word data) {
     binary_stream[dataAddr + i] = (Byte)partial_data;
     data = data >> 8;
   }
-
-  DEBUG_PRINT("Write Data[" << hex << dataAddr << "] = " << hex << original_data << dec);
 }
 

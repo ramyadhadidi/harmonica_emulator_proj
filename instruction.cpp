@@ -215,7 +215,7 @@ void instruction_c::execute(warp_c &warp, unsigned int threadID) {
   DEBUG_PRINTF(("pc: 0x%"PRIx64" wpID:%u thID:%u\n", warp.m_pc, warp.m_warpId, threadID));
 
   if(m_predicated)
-    DEBUG_PRINTF(("@p%u\n", m_predReg));
+    DEBUG_PRINTF(("@p%u\n ?", m_predReg));
 
   DEBUG_PC_PRINT(warp.m_pc);
 
@@ -223,8 +223,9 @@ void instruction_c::execute(warp_c &warp, unsigned int threadID) {
   Word memoryAddr;
 
   //Check for Predicate
-  if (m_predicated)
-    if(!warp.m_predRF[threadID][m_predReg])
+  //Split and Join is not predicated for execution
+  if ( (m_predicated && !warp.m_predRF[threadID][m_predReg]) &&
+          (m_op != SPLIT && m_op != JOIN) )
       goto noExecution;
 
   //Inst Execution
@@ -545,8 +546,10 @@ void instruction_c::execute(warp_c &warp, unsigned int threadID) {
 
     //SIMD Control
     case CLONE:
-      for (int i=0; i<GPR_REG_NUM; i++)
-        warp.m_regRF[m_srcReg[0]][i] = warp.m_regRF[threadID][i];
+      for (int i=0; i<GPR_REG_NUM; i++) {
+        Word destLane = warp.m_regRF[threadID][m_srcReg[0]];
+        warp.m_regRF[destLane][i] = warp.m_regRF[threadID][i];
+      }
       printf("CLONE %u\n", m_srcReg[0]);
       break;
     case JALIS:
