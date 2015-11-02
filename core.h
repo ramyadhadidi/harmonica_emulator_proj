@@ -53,11 +53,34 @@ class core_c {
     map<Word, set<warp_c *> > bar;
 };
 
+
+/**
+ * @struct IPDOMStackEntry_t
+ * @brief IPDOM Reconverge Stack Entry Type
+ */
+
+struct IPDOMStackEntry_t {
+    bool threadMask[SIMD_LANE_NUM];
+    Addr pc;
+    bool pc_invalid;
+
+    IPDOMStackEntry_t(Addr current_pc, bool _pc_invalid, bool *_threadMask,
+        bool maskInvert) :pc_invalid(_pc_invalid)   
+    {
+        pc = current_pc + STEP_PC;
+        for (int threadID=0; threadID<SIMD_LANE_NUM; threadID++)
+            if (maskInvert)
+                threadMask[threadID] = !_threadMask[threadID];
+            else
+                threadMask[threadID] = _threadMask[threadID];
+    }
+};
+
 /**
  * @class warp_c
  * @brief each warps contains of an array of threads, also register files are
  *        alocated in here.
- * @file warp.h warp.cpp
+ * @file core.h core.cpp
  * @author Ramyad Hadidi
  * @data 2015-10
  */
@@ -114,6 +137,12 @@ class warp_c {
     Size m_activeThreads;
     Size m_shadowActiveThreads;         //For implementing barriers
     Size m_nextActiveThreads;
+
+    /**Thread Masks**/
+    bool m_threadMask[SIMD_LANE_NUM];
+
+    /**Reconverge Support**/
+    stack <IPDOMStackEntry_t> m_reconvergeStack;
 };
 
 #endif

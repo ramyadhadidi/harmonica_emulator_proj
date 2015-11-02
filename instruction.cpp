@@ -217,8 +217,6 @@ void instruction_c::execute(warp_c &warp, unsigned int threadID) {
   if(m_predicated)
     DEBUG_PRINTF(("@p%u\n ?", m_predReg));
 
-  DEBUG_PC_PRINT(warp.m_pc);
-
   warp.m_pc_changed = false;
   Word memoryAddr;
 
@@ -588,6 +586,7 @@ void instruction_c::execute(warp_c &warp, unsigned int threadID) {
         cerr << "JMPRT executed by thread %u" << threadID << "at pc: " << hex << warp.m_pc << "\n";
       break;
     case SPLIT:
+      IPDOMStackEntry_t (warp.m_pc, true, warp.m_threadMask, false);
     case JOIN:
       cout << "Unsupported instruction in this version " << instTable[m_op].opString << endl;
       break;
