@@ -22,15 +22,44 @@ core_c::core_c(string filename) {
   m_warps = new warp_c[WARP_SIZE];
   for(unsigned int warpId=0; warpId<WARP_SIZE; warpId++) {
     m_warps[warpId] = warp_c(this, &m_bin, warpId);
-    m_activeWarp[warpId] = false;
+    m_activeWarpMask[warpId] = false;
   }
-   m_activeWarp[0] = true;
+  m_activeWarps = 1;
+  m_nextActiveWarps = 1;
+  m_activeWarpMask[0] = true;
+  m_warpSizeChanged = false;
 }
 
 void core_c::step() {
-    for(unsigned int warpId=0; warpId<WARP_SIZE; warpId++)
-      if (m_activeWarp[warpId])
-        m_warps[warpId].step();
+
+  m_warpSizeChanged = false;
+
+  //Execute each Warp
+  for(unsigned int warpId=0; warpId<m_activeWarps; warpId++)
+    if (m_activeWarpMask[warpId])
+      m_warps[warpId].step();
+
+  //Warp Size update (spawn)
+  if (m_warpSizeChanged) {
+    DEBUG_CORE_PRINTF(("|--> Change of Active Warps from %"PRId64" to %"PRId64"\n", m_activeWarps, m_nextActiveWarps));
+    if (m_nextActiveWarps > WARP_SIZE) {
+      cerr << "Error: attempt to spawn " << m_nextActiveWarps << " warps\n";
+      exit(1);
+    }
+    m_activeWarps = m_nextActiveWarps;
+  }
+
+  //Check for HALT in all warps
+  bool is_all_halt = true;
+  for(unsigned int warpId=0; warpId<WARP_SIZE; warpId++) {
+    if(m_activeWarpMask[warpId])
+      is_all_halt = false;
+  }
+  if(is_all_halt) {
+    DEBUG_CORE_PRINTF(("|--> HALT ALL WARPS :: STOP\n"));
+    exec_finish = true;
+  }
+
 }
 
 /**
@@ -117,9 +146,9 @@ warp_c::warp_c(core_c *core, binReader_c* bin, unsigned int warpId) {
 void warp_c::step() {
   //Debug
   DEBUG_PC_PRINT((m_pc));
-  DEBUG_WARP_PRINTF(("|--> WarpID %u: PC 0x%"PRIx64"\n", m_warpId, m_pc));
-  DEBUG_WARP_PRINTF(("|--> WarpID %u: # Active Threads %"PRId64"\n", m_warpId, m_activeThreads));
-  DEBUG_WARP_PRINTF(("|--> WarpID %u: Thread Masks\t", m_warpId));
+  DEBUG_WARP_PRINTF(("||--> WarpID %u: PC 0x%"PRIx64"\n", m_warpId, m_pc));
+  DEBUG_WARP_PRINTF(("||--> WarpID %u: # Active Threads %"PRId64"\n", m_warpId, m_activeThreads));
+  DEBUG_WARP_PRINTF(("||--> WarpID %u: Thread Masks\t", m_warpId));
   for (int _threadID=0; _threadID<SIMD_LANE_NUM; _threadID++)
     DEBUG_WARP_PRINTF(("%x ", m_threadMask[_threadID]));
   DEBUG_WARP_PRINTF(("\n"));
@@ -150,7 +179,7 @@ void warp_c::step() {
 
   // Active Threads
   if (m_activeThreads != m_nextActiveThreads) {
-    DEBUG_WARP_PRINTF(("|--> WarpID %u: #Active Threads changed from %"PRId64" to %"PRId64"\n", m_warpId, m_activeThreads, m_nextActiveThreads));
+    DEBUG_WARP_PRINTF(("||--> WarpID %u: #Active Threads changed from %"PRId64" to %"PRId64"\n", m_warpId, m_activeThreads, m_nextActiveThreads));
     m_activeThreads = m_nextActiveThreads;
     if(m_nextActiveThreads > SIMD_LANE_NUM) {
       cerr << "Error: attempt to spawn " << m_nextActiveThreads << " threads\n";
