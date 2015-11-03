@@ -211,18 +211,16 @@ instruction_c::instruction_c(Word inst) :
 
 void instruction_c::execute(warp_c &warp, unsigned int threadID) {
   //Debug Messages
-  DEBUG_PRINTF(("\n"));
   DEBUG_PRINTF(("pc: 0x%"PRIx64" wpID:%u thID:%u\n", warp.m_pc, warp.m_warpId, threadID));
 
   if(m_predicated)
-    DEBUG_PRINTF(("@p%u\n ?", m_predReg));
+    DEBUG_PRINTF(("@p%u ?", m_predReg));
 
-  warp.m_pc_changed = false;
   Word memoryAddr;
 
   //Check for Predicate
   //Split and Join is not predicated for execution
-  if ( (m_predicated && !warp.m_predRF[threadID][m_predReg]) &&
+  if ( ( (m_predicated && !warp.m_predRF[threadID][m_predReg]) || !warp.m_threadMask[threadID] ) &&
           (m_op != SPLIT && m_op != JOIN) )
       goto noExecution;
 
@@ -533,7 +531,7 @@ void instruction_c::execute(warp_c &warp, unsigned int threadID) {
                     m_srcImm, warp.m_pc, warp.m_next_pc));
       break;
     case JALR:
-      warp.m_regRF[threadID][m_destReg] = warp.m_pc;
+      warp.m_regRF[threadID][m_destReg] = warp.m_pc + STEP_PC;
       warp.m_next_pc = warp.m_regRF[threadID][m_srcReg[0]];
       warp.m_pc_changed = true;
       DEBUG_PRINTF(("JALR r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64") (pc=0x%"PRIx64" next_pc=0x%"PRIx64")\n", \
@@ -564,7 +562,7 @@ void instruction_c::execute(warp_c &warp, unsigned int threadID) {
       break;
     case JALRS:
       warp.m_nextActiveThreads = warp.m_regRF[threadID][m_srcReg[0]];
-      warp.m_regRF[threadID][m_destReg] = warp.m_pc;
+      warp.m_regRF[threadID][m_destReg] = warp.m_pc + STEP_PC;
       warp.m_next_pc = warp.m_regRF[threadID][m_srcReg[1]];
       warp.m_pc_changed = true;
       printf("JALRS r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64") (pc=0x%"PRIx64" next_pc=0x%"PRIx64")\n", \
@@ -585,10 +583,37 @@ void instruction_c::execute(warp_c &warp, unsigned int threadID) {
       if(threadID != 0)
         cerr << "JMPRT executed by thread %u" << threadID << "at pc: " << hex << warp.m_pc << "\n";
       break;
-    case SPLIT:
-      IPDOMStackEntry_t (warp.m_pc, true, warp.m_threadMask, false);
-    case JOIN:
-      cout << "Unsupported instruction in this version " << instTable[m_op].opString << endl;
+    case SPLIT: 
+      if (!warp.m_splitJoinOnce) {
+        warp.m_splitJoinOnce = true;
+        //Porcess Start
+        IPDOMStackEntry_t reconvergePoint(warp.m_pc, true, warp.m_threadMask, false);
+        warp.m_reconvergeStack.push(reconvergePoint);
+        IPDOMStackEntry_t divergePath(warp.m_pc, false, warp.m_threadMask, true, m_predReg, warp.m_predRF);
+        warp.m_reconvergeStack.push(divergePath);
+        for (int threadID=0; threadID<SIMD_LANE_NUM; threadID++) 
+          warp.m_threadMask[threadID] = warp.m_threadMask[threadID] && warp.m_predRF[threadID][m_predReg];
+        printf("SPLIT: pushed (pc=0x%"PRIx64", pc_invalid:%x) (pc=0x%"PRIx64", pc_invalid:%x)\n", \
+                warp.m_pc, 1, \
+                warp.m_pc, 0 );
+      }
+      break;
+    case JOIN: 
+      if (!warp.m_splitJoinOnce) {
+        warp.m_splitJoinOnce = true;
+        //Porcess Start
+        //Replace PC
+        if (!warp.m_reconvergeStack.top().pc_invalid) {
+          warp.m_next_pc = warp.m_reconvergeStack.top().pc;
+          warp.m_pc_changed = true;
+        }
+        //Replace Thread Mask
+        for (int threadID=0; threadID<SIMD_LANE_NUM; threadID++)
+          warp.m_threadMask[threadID] = warp.m_reconvergeStack.top().threadMask[threadID];
+        //Pop stack
+        warp.m_reconvergeStack.pop();
+        printf("JOIN\n");
+      }
       break;
 
     //Warp Control
@@ -596,27 +621,31 @@ void instruction_c::execute(warp_c &warp, unsigned int threadID) {
       cout << "Unsupported instruction in this version " << instTable[m_op].opString << endl;
       break;
     case BAR:
-      Word id, n;
-      id = warp.m_regRF[threadID][m_srcReg[0]];
-      n = warp.m_regRF[threadID][m_srcReg[1]];
-      //Insert Current warp to the barrier
-      set<warp_c *> *b;
-      b = &(warp.m_core->bar[id]);
-      b->insert(&warp);
-      //Save active threads and stop warp
-      warp.m_shadowActiveThreads = warp.m_activeThreads;
-      warp.m_activeThreads = 0;
-      printf("BAR r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64")\n", \
-                    m_srcReg[0], threadID, warp.m_regRF[threadID][m_srcReg[0]], \
-                    m_srcReg[1], threadID, warp.m_regRF[threadID][m_srcReg[1]]);
-      //If the barrier's full, reactivate warps waiting at it
-      if (b->size() == n) {
-        set<warp_c *>::iterator it;
-        for (it = b->begin(); it != b->end(); ++it)
-          (*it)->m_activeThreads = (*it)->m_shadowActiveThreads;
-        warp.m_core->bar.erase(id);
-        warp.m_nextActiveThreads = warp.m_shadowActiveThreads;
-        printf("BAR %"PRIu64" reached\n", id);
+      if (!warp.m_splitJoinOnce) {
+        warp.m_splitJoinOnce = true;
+        //Porcess Start
+        Word id, n;
+        id = warp.m_regRF[threadID][m_srcReg[0]];
+        n = warp.m_regRF[threadID][m_srcReg[1]];
+        //Insert Current warp to the barrier
+        set<warp_c *> *b;
+        b = &(warp.m_core->bar[id]);
+        b->insert(&warp);
+        //Save active threads and stop warp
+        warp.m_shadowActiveThreads = warp.m_activeThreads;
+        warp.m_activeThreads = 0;
+        printf("BAR r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64")\n", \
+                      m_srcReg[0], threadID, warp.m_regRF[threadID][m_srcReg[0]], \
+                      m_srcReg[1], threadID, warp.m_regRF[threadID][m_srcReg[1]]);
+        //If the barrier's full, reactivate warps waiting at it
+        if (b->size() == n) {
+          set<warp_c *>::iterator it;
+          for (it = b->begin(); it != b->end(); ++it)
+            (*it)->m_activeThreads = (*it)->m_shadowActiveThreads;
+          warp.m_core->bar.erase(id);
+          warp.m_nextActiveThreads = warp.m_shadowActiveThreads;
+          printf("BAR %"PRIu64" reached\n", id);
+        }
       }
       break;
     
@@ -648,11 +677,12 @@ void instruction_c::execute(warp_c &warp, unsigned int threadID) {
   for (int _threadID=0; _threadID<SIMD_LANE_NUM; _threadID++) {
     DEBUG_PRINTF(("\t"));
     for(int i=0; i<PRED_REG_NUM; i++)
-      DEBUG_PRINTF(("%x", warp.m_predRF[threadID][i]));
+      DEBUG_PRINTF(("%x", warp.m_predRF[_threadID][i]));
     DEBUG_PRINTF(("\n"));
   }
   //Debug Active Threads
   DEBUG_PRINTF(("# Active Threads: %"PRId64"\n", warp.m_activeThreads));
   if(warp.m_activeThreads != warp.m_nextActiveThreads)
     DEBUG_PRINTF(("# Next Active Threads: %"PRId64"\n", warp.m_nextActiveThreads));
+  DEBUG_PRINTF(("\n"));
 }

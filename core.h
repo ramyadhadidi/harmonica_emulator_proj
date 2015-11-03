@@ -60,12 +60,13 @@ class core_c {
  */
 
 struct IPDOMStackEntry_t {
+    Word pred;
     bool threadMask[SIMD_LANE_NUM];
     Addr pc;
     bool pc_invalid;
 
-    IPDOMStackEntry_t(Addr current_pc, bool _pc_invalid, bool *_threadMask,
-        bool maskInvert) :pc_invalid(_pc_invalid)   
+    IPDOMStackEntry_t(Addr current_pc, bool _pc_invalid, bool _threadMask[], bool maskInvert) 
+        :pc_invalid(_pc_invalid)   
     {
         pc = current_pc + STEP_PC;
         for (int threadID=0; threadID<SIMD_LANE_NUM; threadID++)
@@ -73,6 +74,26 @@ struct IPDOMStackEntry_t {
                 threadMask[threadID] = !_threadMask[threadID];
             else
                 threadMask[threadID] = _threadMask[threadID];
+    }
+
+    IPDOMStackEntry_t(Addr current_pc, bool _pc_invalid, bool _threadMask[], bool maskInvert,
+        Word _pred, bool _predRegs[][PRED_REG_NUM]) :pred(_pred), pc_invalid(_pc_invalid)   
+    {
+        pc = current_pc + STEP_PC;
+        for (int threadID=0; threadID<SIMD_LANE_NUM; threadID++)
+            if (maskInvert)
+                threadMask[threadID] = !_predRegs[threadID][_pred] && _threadMask[threadID];
+            else
+                threadMask[threadID] = _predRegs[threadID][_pred] && _threadMask[threadID];
+    }
+
+    IPDOMStackEntry_t& operator=(const IPDOMStackEntry_t& entry) {
+        this->pred = entry.pred;
+        this->pc = entry.pc;
+        this->pc_invalid = entry.pc_invalid;
+        for (int threadID=0; threadID<SIMD_LANE_NUM; threadID++)
+            this->threadMask[threadID] = entry.threadMask[threadID];
+        return *this;
     }
 };
 
@@ -143,6 +164,7 @@ class warp_c {
 
     /**Reconverge Support**/
     stack <IPDOMStackEntry_t> m_reconvergeStack;
+    bool m_splitJoinOnce;
 };
 
 #endif
