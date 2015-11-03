@@ -123,6 +123,12 @@ void warp_c::step() {
     DEBUG_WARP_PRINTF(("%x ", m_threadMask[_threadID]));
   DEBUG_WARP_PRINTF(("\n"));
 
+  //Reconverge Support: for just pushing and poping one element in stack
+  m_splitJoinOnce = false;
+
+  //Since all jump addresses are same, just one change is enough
+  m_pc_changed = false;
+
   //Exectuion
   for (unsigned int threadId=0; threadId<m_activeThreads; threadId++) {
     /// get instruction binary
@@ -150,4 +156,5 @@ void warp_c::step() {
       exit(1);
     }
   }
+  DEBUG_WARP_PRINTF(("\n"));
 }
