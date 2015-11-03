@@ -26,6 +26,9 @@
 /** @brief prints warp debug messages: PC, warp States */
 //#define DEBUG_WARP
 
+/** @brief Just prints PC **/
+//#define DEBUG_PC
+
 #ifdef DEBUG
 #define DEBUG_PRINT(X) cout << X << endl;
 #define DEBUG_PRINTF(x) printf x;
@@ -40,6 +43,12 @@
 #else
 #define DEBUG_WARP_PRINT(X) do {} while (0);
 #define DEBUG_WARP_PRINTF(x) do {} while (0);
+#endif
+
+#ifdef DEBUG_PC
+#define DEBUG_PC_PRINT(X) cout << hex << X << endl;
+#else
+#define DEBUG_PC_PRINT(X) do {} while (0);
 #endif
 
 /** @brief save output to the file at argv[2], else to stdout */

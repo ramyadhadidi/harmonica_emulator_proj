@@ -116,6 +116,7 @@ warp_c::warp_c(core_c *core, binReader_c* bin, unsigned int warpId) {
 
 void warp_c::step() {
   //Debug
+  DEBUG_PC_PRINT((m_pc));
   DEBUG_WARP_PRINTF(("|--> WarpID %u: PC 0x%"PRIx64"\n", m_warpId, m_pc));
   DEBUG_WARP_PRINTF(("|--> WarpID %u: # Active Threads %"PRId64"\n", m_warpId, m_activeThreads));
   DEBUG_WARP_PRINTF(("|--> WarpID %u: Thread Masks\t", m_warpId));
