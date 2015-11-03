@@ -546,17 +546,17 @@ void instruction_c::execute(warp_c &warp, unsigned int threadID) {
         Word destLane = warp.m_regRF[threadID][m_srcReg[0]];
         warp.m_regRF[destLane][i] = warp.m_regRF[threadID][i];
       }
-      printf("CLONE %u\n", m_srcReg[0]);
+      DEBUG_PRINTF(("CLONE %u\n", m_srcReg[0]));
       break;
     case JALIS:
       warp.m_nextActiveThreads = warp.m_regRF[threadID][m_srcReg[0]];
       warp.m_regRF[threadID][m_destReg] = warp.m_pc + STEP_PC;
       warp.m_next_pc = warp.m_pc + STEP_PC + m_srcImm;
       warp.m_pc_changed = true;
-      printf("JALIS r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64") 0x%"PRIx64" (pc=0x%"PRIx64" next_pc=0x%"PRIx64")\n", \
+      DEBUG_PRINTF(("JALIS r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64") 0x%"PRIx64" (pc=0x%"PRIx64" next_pc=0x%"PRIx64")\n", \
                     m_destReg, threadID, warp.m_regRF[threadID][m_destReg], \
                     m_srcReg[0], threadID, warp.m_regRF[threadID][m_srcReg[0]], \
-                    m_srcImm, warp.m_pc, warp.m_next_pc);
+                    m_srcImm, warp.m_pc, warp.m_next_pc));
       if(threadID != 0)
         cerr << "JALIS executed by thread %u" << threadID << "at pc: " << hex << warp.m_pc << "\n";
       break;
@@ -565,11 +565,11 @@ void instruction_c::execute(warp_c &warp, unsigned int threadID) {
       warp.m_regRF[threadID][m_destReg] = warp.m_pc + STEP_PC;
       warp.m_next_pc = warp.m_regRF[threadID][m_srcReg[1]];
       warp.m_pc_changed = true;
-      printf("JALRS r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64") (pc=0x%"PRIx64" next_pc=0x%"PRIx64")\n", \
+      DEBUG_PRINTF(("JALRS r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64") (pc=0x%"PRIx64" next_pc=0x%"PRIx64")\n", \
                     m_destReg, threadID, warp.m_regRF[threadID][m_destReg], \
                     m_srcReg[0], threadID, warp.m_regRF[threadID][m_srcReg[0]], \
                     m_srcReg[1], threadID, warp.m_regRF[threadID][m_srcReg[1]], \
-                    warp.m_pc, warp.m_next_pc);
+                    warp.m_pc, warp.m_next_pc));
       if(threadID != 0)
         cerr << "JALRS executed by thread %u" << threadID << "at pc: " << hex << warp.m_pc << "\n";
       break;
@@ -577,9 +577,9 @@ void instruction_c::execute(warp_c &warp, unsigned int threadID) {
       warp.m_nextActiveThreads = 1;
       warp.m_next_pc = warp.m_pc + warp.m_regRF[threadID][m_srcReg[0]];
       warp.m_pc_changed = true;
-      printf("JMPRT r%u[%u](0x%"PRIx64") (pc=0x%"PRIx64" next_pc=0x%"PRIx64")\n", \
+      DEBUG_PRINTF(("JMPRT r%u[%u](0x%"PRIx64") (pc=0x%"PRIx64" next_pc=0x%"PRIx64")\n", \
                     m_srcReg[0], threadID, warp.m_regRF[threadID][m_srcReg[0]], \
-                    warp.m_pc, warp.m_next_pc);
+                    warp.m_pc, warp.m_next_pc));
       if(threadID != 0)
         cerr << "JMPRT executed by thread %u" << threadID << "at pc: " << hex << warp.m_pc << "\n";
       break;
@@ -593,9 +593,9 @@ void instruction_c::execute(warp_c &warp, unsigned int threadID) {
         warp.m_reconvergeStack.push(divergePath);
         for (int threadID=0; threadID<SIMD_LANE_NUM; threadID++) 
           warp.m_threadMask[threadID] = warp.m_threadMask[threadID] && warp.m_predRF[threadID][m_predReg];
-        printf("SPLIT: pushed (pc=0x%"PRIx64", pc_invalid:%x) (pc=0x%"PRIx64", pc_invalid:%x)\n", \
+        DEBUG_PRINTF(("SPLIT: pushed (pc=0x%"PRIx64", pc_invalid:%x) (pc=0x%"PRIx64", pc_invalid:%x)\n", \
                 warp.m_pc, 1, \
-                warp.m_pc, 0 );
+                warp.m_pc, 0 ));
       }
       break;
     case JOIN: 
@@ -612,7 +612,7 @@ void instruction_c::execute(warp_c &warp, unsigned int threadID) {
           warp.m_threadMask[threadID] = warp.m_reconvergeStack.top().threadMask[threadID];
         //Pop stack
         warp.m_reconvergeStack.pop();
-        printf("JOIN\n");
+        DEBUG_PRINTF(("JOIN\n"));
       }
       break;
 
@@ -634,9 +634,12 @@ void instruction_c::execute(warp_c &warp, unsigned int threadID) {
         //Save active threads and stop warp
         warp.m_shadowActiveThreads = warp.m_activeThreads;
         warp.m_activeThreads = 0;
-        printf("BAR r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64")\n", \
+        DEBUG_PRINTF(("BAR r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64")\n", \
                       m_srcReg[0], threadID, warp.m_regRF[threadID][m_srcReg[0]], \
-                      m_srcReg[1], threadID, warp.m_regRF[threadID][m_srcReg[1]]);
+                      m_srcReg[1], threadID, warp.m_regRF[threadID][m_srcReg[1]]));
+        DEBUG_WARP_PRINT(("BAR r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64")\n", \
+                      m_srcReg[0], threadID, warp.m_regRF[threadID][m_srcReg[0]], \
+                      m_srcReg[1], threadID, warp.m_regRF[threadID][m_srcReg[1]]));
         //If the barrier's full, reactivate warps waiting at it
         if (b->size() == n) {
           set<warp_c *>::iterator it;
@@ -644,7 +647,8 @@ void instruction_c::execute(warp_c &warp, unsigned int threadID) {
             (*it)->m_activeThreads = (*it)->m_shadowActiveThreads;
           warp.m_core->bar.erase(id);
           warp.m_nextActiveThreads = warp.m_shadowActiveThreads;
-          printf("BAR %"PRIu64" reached\n", id);
+          DEBUG_PRINTF(("BAR %"PRIu64" reached\n", id));
+          DEBUG_WARP_PRINT(("BAR %"PRIu64" reached\n", id));
         }
       }
       break;
