@@ -91,7 +91,7 @@ void binReader_c::write_data(Addr dataAddr, Word data) {
   }
 
   for (int i=0; i<WORD_SIZE_IN_BYTE; i++) {
-    Word partial_data = data & (pow2(8)-1);
+    Word partial_data = data & ((1LL<<8)-1);
     binary_stream[dataAddr + i] = (Byte)partial_data;
     data = data >> 8;
   }

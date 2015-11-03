@@ -78,7 +78,7 @@ instruction_c::instTableEntry instruction_c::instTable[] = {
 
 Word instruction_c::signExt(Word s, Word last_bit) {
   if (s >> (last_bit-1))
-    s |= ~(pow2(last_bit)-1);
+    s |= ~((1LL<<last_bit)-1);
   return s;
 }
 
@@ -94,7 +94,7 @@ instruction_c::instruction_c(Word inst) :
   current_right_shift -= PRED_REG_BIT;
   setPredReg(( inst  >> current_right_shift ) & (PRED_REG_NUM-1LL));
   current_right_shift -= 6;
-  setOpCode(static_cast<Opcode> ( ( inst >> current_right_shift ) & (pow2(6)-1LL) ));
+  setOpCode(static_cast<Opcode> ( ( inst >> current_right_shift ) & ((1LL<<6)-1LL) ));
 
   //Individual Fields
   switch (instTable[m_op].argClass) {
@@ -111,7 +111,7 @@ instruction_c::instruction_c(Word inst) :
     case AC_2IMM:
       current_right_shift -= GPR_REG_BIT;
       setDestReg(( inst  >> current_right_shift ) & (GPR_REG_NUM-1LL));
-      setImmSrc(signExt((inst & ( pow2(current_right_shift) - 1 )), current_right_shift));
+      setImmSrc(signExt((inst & ( (1LL<<current_right_shift) - 1 )), current_right_shift));
       break;
 
     case AC_3REG:
@@ -137,7 +137,7 @@ instruction_c::instruction_c(Word inst) :
       setDestReg(( inst  >> current_right_shift ) & (GPR_REG_NUM-1LL));
       current_right_shift -= GPR_REG_BIT;
       setSrcReg(( inst  >> current_right_shift ) & (GPR_REG_NUM-1LL));
-      setImmSrc(signExt((inst & ( pow2(current_right_shift) - 1 )), current_right_shift));
+      setImmSrc(signExt((inst & ( (1LL<<current_right_shift) - 1 )), current_right_shift));
       break;
 
     case AC_3REGSRC:
@@ -150,7 +150,7 @@ instruction_c::instruction_c(Word inst) :
       break;
 
     case AC_1IMM:
-      setImmSrc(signExt((inst & ( pow2(current_right_shift) - 1 )), current_right_shift));
+      setImmSrc(signExt((inst & ( (1LL<<current_right_shift) - 1 )), current_right_shift));
       break;
 
     case AC_1REG:
@@ -163,7 +163,7 @@ instruction_c::instruction_c(Word inst) :
       setSrcReg(( inst  >> current_right_shift ) & (GPR_REG_NUM-1LL));
       current_right_shift -= GPR_REG_BIT;
       setSrcReg(( inst  >> current_right_shift ) & (GPR_REG_NUM-1LL));
-      setImmSrc(signExt((inst & ( pow2(current_right_shift) - 1 )), current_right_shift));
+      setImmSrc(signExt((inst & ( (1LL<<current_right_shift) - 1 )), current_right_shift));
       break;
 
     case AC_PREG_REG:
@@ -326,7 +326,7 @@ void instruction_c::execute(warp_c &warp, unsigned int threadID) {
     //Imm Arith/Logic
     case ADDI:
       warp.m_regRF[threadID][m_destReg] = warp.m_regRF[threadID][m_srcReg[0]] + m_srcImm;
-      warp.m_regRF[threadID][m_destReg] &= (pow2(WORD_SIZE_IN_BITS) - 1 );
+      warp.m_regRF[threadID][m_destReg] &= ((1LL<<WORD_SIZE_IN_BITS) - 1 );
       DEBUG_PRINTF(("ADDI r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64") 0x%"PRIx64"\n", \
                     m_destReg, threadID, warp.m_regRF[threadID][m_destReg], \
                     m_srcReg[0], threadID, warp.m_regRF[threadID][m_srcReg[0]], \
@@ -334,7 +334,7 @@ void instruction_c::execute(warp_c &warp, unsigned int threadID) {
       break;
     case SUBI:
       warp.m_regRF[threadID][m_destReg] = warp.m_regRF[threadID][m_srcReg[0]] - m_srcImm;
-      warp.m_regRF[threadID][m_destReg] &= (pow2(WORD_SIZE_IN_BITS) - 1 );
+      warp.m_regRF[threadID][m_destReg] &= ((1LL<<WORD_SIZE_IN_BITS) - 1 );
       DEBUG_PRINTF(("SUBI r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64") 0x%"PRIx64"\n", \
                     m_destReg, threadID, warp.m_regRF[threadID][m_destReg], \
                     m_srcReg[0], threadID, warp.m_regRF[threadID][m_srcReg[0]], \
@@ -342,7 +342,7 @@ void instruction_c::execute(warp_c &warp, unsigned int threadID) {
       break;
     case MULI:
       warp.m_regRF[threadID][m_destReg] = warp.m_regRF[threadID][m_srcReg[0]] * m_srcImm;
-      warp.m_regRF[threadID][m_destReg] &= (pow2(WORD_SIZE_IN_BITS) - 1 );
+      warp.m_regRF[threadID][m_destReg] &= ((1LL<<WORD_SIZE_IN_BITS) - 1 );
       DEBUG_PRINTF(("MULI r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64") 0x%"PRIx64"\n", \
                     m_destReg, threadID, warp.m_regRF[threadID][m_destReg], \
                     m_srcReg[0], threadID, warp.m_regRF[threadID][m_srcReg[0]], \
@@ -371,7 +371,7 @@ void instruction_c::execute(warp_c &warp, unsigned int threadID) {
       break;
     case SHLI:
       warp.m_regRF[threadID][m_destReg] = warp.m_regRF[threadID][m_srcReg[0]] << m_srcImm;
-      warp.m_regRF[threadID][m_destReg] &= (pow2(WORD_SIZE_IN_BITS) - 1 );
+      warp.m_regRF[threadID][m_destReg] &= ((1LL<<WORD_SIZE_IN_BITS) - 1 );
       DEBUG_PRINTF(("SHLI r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64") 0x%"PRIx64"\n", \
                     m_destReg, threadID, warp.m_regRF[threadID][m_destReg], \
                     m_srcReg[0], threadID, warp.m_regRF[threadID][m_srcReg[0]], \
@@ -400,7 +400,7 @@ void instruction_c::execute(warp_c &warp, unsigned int threadID) {
       break;
     case LDI:
       warp.m_regRF[threadID][m_destReg] = m_srcImm;
-      warp.m_regRF[threadID][m_destReg] &= (pow2(WORD_SIZE_IN_BITS) - 1 );
+      warp.m_regRF[threadID][m_destReg] &= ((1LL<<WORD_SIZE_IN_BITS) - 1 );
       DEBUG_PRINTF(("LDI r%u[%u](0x%"PRIx64") 0x%"PRIx64"\n", \
                     m_destReg, threadID, warp.m_regRF[threadID][m_destReg], \
                     m_srcImm));
@@ -409,7 +409,7 @@ void instruction_c::execute(warp_c &warp, unsigned int threadID) {
     //Reg Arith/Logic
     case ADD:
       warp.m_regRF[threadID][m_destReg] = warp.m_regRF[threadID][m_srcReg[0]] + warp.m_regRF[threadID][m_srcReg[1]];
-      warp.m_regRF[threadID][m_destReg] &= (pow2(WORD_SIZE_IN_BITS) - 1 );
+      warp.m_regRF[threadID][m_destReg] &= ((1LL<<WORD_SIZE_IN_BITS) - 1 );
       DEBUG_PRINTF(("ADD r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64")\n", \
                     m_destReg, threadID, warp.m_regRF[threadID][m_destReg], \
                     m_srcReg[0], threadID, warp.m_regRF[threadID][m_srcReg[0]], \
@@ -417,7 +417,7 @@ void instruction_c::execute(warp_c &warp, unsigned int threadID) {
       break;
     case SUB:
       warp.m_regRF[threadID][m_destReg] = warp.m_regRF[threadID][m_srcReg[0]] - warp.m_regRF[threadID][m_srcReg[1]];
-      warp.m_regRF[threadID][m_destReg] &= (pow2(WORD_SIZE_IN_BITS) - 1 );
+      warp.m_regRF[threadID][m_destReg] &= ((1LL<<WORD_SIZE_IN_BITS) - 1 );
       DEBUG_PRINTF(("SUB r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64")\n", \
                     m_destReg, threadID, warp.m_regRF[threadID][m_destReg], \
                     m_srcReg[0], threadID, warp.m_regRF[threadID][m_srcReg[0]], \
@@ -425,7 +425,7 @@ void instruction_c::execute(warp_c &warp, unsigned int threadID) {
       break;
     case MUL:
       warp.m_regRF[threadID][m_destReg] = warp.m_regRF[threadID][m_srcReg[0]] * warp.m_regRF[threadID][m_srcReg[1]];
-      warp.m_regRF[threadID][m_destReg] &= (pow2(WORD_SIZE_IN_BITS) - 1 );
+      warp.m_regRF[threadID][m_destReg] &= ((1LL<<WORD_SIZE_IN_BITS) - 1 );
       DEBUG_PRINTF(("MUL r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64")\n", \
                     m_destReg, threadID, warp.m_regRF[threadID][m_destReg], \
                     m_srcReg[0], threadID, warp.m_regRF[threadID][m_srcReg[0]], \
@@ -440,7 +440,7 @@ void instruction_c::execute(warp_c &warp, unsigned int threadID) {
       break;
     case SHL:
       warp.m_regRF[threadID][m_destReg] = warp.m_regRF[threadID][m_srcReg[0]] << warp.m_regRF[threadID][m_srcReg[1]];
-      warp.m_regRF[threadID][m_destReg] &= (pow2(WORD_SIZE_IN_BITS) - 1 );
+      warp.m_regRF[threadID][m_destReg] &= ((1LL<<WORD_SIZE_IN_BITS) - 1 );
       DEBUG_PRINTF(("SHL r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64")\n", \
                     m_destReg, threadID, warp.m_regRF[threadID][m_destReg], \
                     m_srcReg[0], threadID, warp.m_regRF[threadID][m_srcReg[0]], \
@@ -448,7 +448,7 @@ void instruction_c::execute(warp_c &warp, unsigned int threadID) {
       break;
     case SHR:
       warp.m_regRF[threadID][m_destReg] = Word_s(warp.m_regRF[threadID][m_srcReg[0]]) >> warp.m_regRF[threadID][m_srcReg[1]];
-      warp.m_regRF[threadID][m_destReg] &= (pow2(WORD_SIZE_IN_BITS) - 1 );
+      warp.m_regRF[threadID][m_destReg] &= ((1LL<<WORD_SIZE_IN_BITS) - 1 );
       DEBUG_PRINTF(("SHR r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64")\n", \
                     m_destReg, threadID, warp.m_regRF[threadID][m_destReg], \
                     m_srcReg[0], threadID, warp.m_regRF[threadID][m_srcReg[0]], \
@@ -484,14 +484,14 @@ void instruction_c::execute(warp_c &warp, unsigned int threadID) {
       break;
     case NEG:
       warp.m_regRF[threadID][m_destReg] = -(Word_s)warp.m_regRF[threadID][m_srcReg[0]];
-      warp.m_regRF[threadID][m_destReg] &= (pow2(WORD_SIZE_IN_BITS) - 1 );
+      warp.m_regRF[threadID][m_destReg] &= ((1LL<<WORD_SIZE_IN_BITS) - 1 );
       DEBUG_PRINTF(("NEG r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64")\n", \
                     m_destReg, threadID, warp.m_regRF[threadID][m_destReg], \
                     m_srcReg[0], threadID, warp.m_regRF[threadID][m_srcReg[0]]));
       break;
     case NOT:
       warp.m_regRF[threadID][m_destReg] = ~(Word_s)warp.m_regRF[threadID][m_srcReg[0]];
-      warp.m_regRF[threadID][m_destReg] &= (pow2(WORD_SIZE_IN_BITS) - 1 );
+      warp.m_regRF[threadID][m_destReg] &= ((1LL<<WORD_SIZE_IN_BITS) - 1 );
       DEBUG_PRINTF(("NOT r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64")\n", \
                     m_destReg, threadID, warp.m_regRF[threadID][m_destReg], \
                     m_srcReg[0], threadID, warp.m_regRF[threadID][m_srcReg[0]]));

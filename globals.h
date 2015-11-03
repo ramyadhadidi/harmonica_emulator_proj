@@ -20,13 +20,11 @@
 #include <set>
 #include <stack>
 
-#define pow2(X) (Word)pow(2,X)
-
 /** @brief Prints instructions debug messages */
 //#define DEBUG
 
 /** @brief prints warp debug messages: PC, warp States */
-#define DEBUG_WARP
+//#define DEBUG_WARP
 
 #ifdef DEBUG
 #define DEBUG_PRINT(X) cout << X << endl;
@@ -45,7 +43,7 @@
 #endif
 
 /** @brief save output to the file at argv[2], else to stdout */
-//#define OUTPUT_TO_FILE 
+#define OUTPUT_TO_FILE 
 
 ////////////////////////////////////////////////////////////////
 // Harp Architecture Setting                                  //

@@ -5,7 +5,9 @@
 #
 
 CXX =g++
-CXXFALGS = -c -Wall -g
+#CXXFALGS = -c -Wall -g -fno-omit-frame-pointer
+CXXFALGS = -c -Wall -O3
+
 
 
 all: binReader.o instruction.o core.o main.o 
