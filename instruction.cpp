@@ -239,7 +239,7 @@ void instruction_c::execute(warp_c &warp, unsigned int threadID) {
     case TLBFLUSH:
     case JMPRU:
     case RETI:
-      cout << "Unsupported instruction in this version " << instTable[m_op].opString << endl;
+      cout << warp.m_warpId << " unsupported instruction in this version " << instTable[m_op].opString << endl;
       break;
     case HALT:
       warp.m_core->m_activeWarpMask[warp.m_warpId] = false;
@@ -505,7 +505,7 @@ void instruction_c::execute(warp_c &warp, unsigned int threadID) {
     case FSUB:
     case FMUL: 
     case FDIV:
-      cout << "Unsupported instruction in this version " << instTable[m_op].opString << endl;
+      cout << warp.m_warpId << " unsupported instruction in this version " << instTable[m_op].opString << endl;
       break;
 
     //Contorl Flow
@@ -633,12 +633,16 @@ void instruction_c::execute(warp_c &warp, unsigned int threadID) {
         warp.m_core->m_activeWarpMask[newWarpID] = true;
         warp.m_core->m_warps[newWarpID].m_pc = warp.m_regRF[threadID][m_srcReg[0]];
         warp.m_core->m_warps[newWarpID].m_regRF[0][m_destReg] = warp.m_regRF[threadID][m_srcReg[1]];
-        DEBUG_CORE_PRINTF(("|--> Spawn New Warp %u at PC0x%"PRIx64"\n", \
-              newWarpID, warp.m_regRF[threadID][m_srcReg[0]]));
-        printf("WSPAWN r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64")", \
-              m_destReg, threadID, warp.m_regRF[threadID][m_destReg], \
+        DEBUG_CORE_PRINTF(("|--> Spawn New Warp %u at PC0x%"PRIx64"\n\t" \
+              "r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64")", \
+              newWarpID, warp.m_core->m_warps[newWarpID].m_pc, \
+              m_destReg, newWarpID, warp.m_core->m_warps[newWarpID].m_regRF[0][m_destReg], \
               m_srcReg[0], threadID, warp.m_regRF[threadID][m_srcReg[0]], \
-              m_srcReg[0], threadID, warp.m_regRF[threadID][m_srcReg[1]] );
+              m_srcReg[1], threadID, warp.m_regRF[threadID][m_srcReg[1]] ));
+        DEBUG_PRINTF(("WSPAWN r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64")\n", \
+              m_destReg, newWarpID, warp.m_core->m_warps[newWarpID].m_regRF[0][m_destReg], \
+              m_srcReg[0], threadID, warp.m_regRF[threadID][m_srcReg[0]], \
+              m_srcReg[1], threadID, warp.m_regRF[threadID][m_srcReg[1]] ));
       }
       break;
     case BAR:
@@ -654,33 +658,39 @@ void instruction_c::execute(warp_c &warp, unsigned int threadID) {
         b->insert(&warp);
         //Save active threads and stop warp
         warp.m_shadowActiveThreads = warp.m_activeThreads;
-        warp.m_activeThreads = 0;
+        warp.m_nextActiveThreads = 0;
         DEBUG_PRINTF(("BAR r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64")\n", \
                       m_srcReg[0], threadID, warp.m_regRF[threadID][m_srcReg[0]], \
                       m_srcReg[1], threadID, warp.m_regRF[threadID][m_srcReg[1]]));
-        DEBUG_WARP_PRINTF(("BAR r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64")\n", \
+        DEBUG_WARP_PRINTF(("||--> BAR r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64")\n", \
                       m_srcReg[0], threadID, warp.m_regRF[threadID][m_srcReg[0]], \
                       m_srcReg[1], threadID, warp.m_regRF[threadID][m_srcReg[1]]));
+        DEBUG_CORE_PRINTF(("|--> Barrier %"PRIu64"(%"PRIu64") WarpID%u(%"PRId64") Reached\n", \
+                    id, n, warp.m_warpId, warp.m_shadowActiveThreads));
         //If the barrier's full, reactivate warps waiting at it
         if (b->size() == n) {
+          DEBUG_PRINTF(("BAR %"PRIu64" reached\n", id));
+          DEBUG_WARP_PRINTF(("||--> Barrier %"PRIu64"("PRIu64") Done\n", id, n));
+          DEBUG_CORE_PRINTF(("|--> Barrier %"PRIu64"(%"PRIu64") Done\n", id, n));
           set<warp_c *>::iterator it;
-          for (it = b->begin(); it != b->end(); ++it)
-            (*it)->m_activeThreads = (*it)->m_shadowActiveThreads;
+          for (it = b->begin(); it != b->end(); ++it) {
+            (*it)->m_nextActiveThreads = (*it)->m_shadowActiveThreads;
+            DEBUG_CORE_PRINTF(("|--> WarpID%u(%"PRId64") Activated\n", \
+                  (*it)->m_warpId, (*it)->m_nextActiveThreads ));
+          }
           warp.m_core->bar.erase(id);
           warp.m_nextActiveThreads = warp.m_shadowActiveThreads;
-          DEBUG_PRINTF(("BAR %"PRIu64" reached\n", id));
-          DEBUG_WARP_PRINTF(("BAR %"PRIu64" reached\n", id));
         }
       }
       break;
     
     //User/Ker Interaction
     case TRAP:
-      cout << "Unsupported instruction in this version " << instTable[m_op].opString << endl;
+      cout << warp.m_warpId << " unsupported instruction in this version " << instTable[m_op].opString << endl;
       break;
     
     default:
-      cerr << "Unsupported instruction opcode: 0x" << hex << m_op << dec << endl;
+      cerr << warp.m_warpId << " unsupported instruction opcode: 0x" << hex << m_op << dec << endl;
       exit(1);
   }
 
