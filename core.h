@@ -47,10 +47,15 @@ class core_c {
     warp_c* m_warps;
 
     /**ActiveSM**/
-    bool m_activeWarp[WARP_SIZE];
+    bool m_activeWarpMask[WARP_SIZE];
 
     /**Barriers**/
     map<Word, set<warp_c *> > bar;
+
+    /**Warp Spawn Support**/
+    Size m_activeWarps;             //Active & Halted Warps
+    Size m_nextActiveWarps;         
+    bool m_warpSizeChanged;
 };
 
 
