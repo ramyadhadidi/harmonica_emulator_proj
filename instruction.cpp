@@ -516,8 +516,10 @@ void instruction_c::execute(warp_c &warp, unsigned int threadID) {
                     m_srcImm, warp.m_pc, warp.m_next_pc));
       break;
     case JMPR:
-      warp.m_next_pc = warp.m_regRF[threadID][m_srcReg[0]];
-      warp.m_pc_changed = true;
+      if (!warp.m_pc_changed) { //only first avtive thread change pc from its regfile
+        warp.m_next_pc = warp.m_regRF[threadID][m_srcReg[0]];
+        warp.m_pc_changed = true;
+      }
       DEBUG_PRINTF(("JMPR r%u[%u](0x%"PRIx64") (pc=0x%"PRIx64" next_pc=0x%"PRIx64")\n", \
                     m_srcReg[0], threadID, warp.m_regRF[threadID][m_srcReg[0]], \
                     warp.m_pc, warp.m_next_pc));
@@ -532,8 +534,10 @@ void instruction_c::execute(warp_c &warp, unsigned int threadID) {
       break;
     case JALR:
       warp.m_regRF[threadID][m_destReg] = warp.m_pc + STEP_PC;
-      warp.m_next_pc = warp.m_regRF[threadID][m_srcReg[0]];
-      warp.m_pc_changed = true;
+      if (!warp.m_pc_changed) { //only first avtive thread change pc from its regfile
+        warp.m_next_pc = warp.m_regRF[threadID][m_srcReg[0]];
+        warp.m_pc_changed = true;
+      }
       DEBUG_PRINTF(("JALR r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64") (pc=0x%"PRIx64" next_pc=0x%"PRIx64")\n", \
                     m_destReg, threadID, warp.m_regRF[threadID][m_destReg], \
                     m_srcReg[0], threadID, warp.m_regRF[threadID][m_srcReg[0]], \
@@ -563,8 +567,10 @@ void instruction_c::execute(warp_c &warp, unsigned int threadID) {
     case JALRS:
       warp.m_nextActiveThreads = warp.m_regRF[threadID][m_srcReg[0]];
       warp.m_regRF[threadID][m_destReg] = warp.m_pc + STEP_PC;
-      warp.m_next_pc = warp.m_regRF[threadID][m_srcReg[1]];
-      warp.m_pc_changed = true;
+      if (!warp.m_pc_changed) { //only first avtive thread change pc from its regfile
+        warp.m_next_pc = warp.m_regRF[threadID][m_srcReg[1]];
+        warp.m_pc_changed = true;
+      }
       DEBUG_PRINTF(("JALRS r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64") (pc=0x%"PRIx64" next_pc=0x%"PRIx64")\n", \
                     m_destReg, threadID, warp.m_regRF[threadID][m_destReg], \
                     m_srcReg[0], threadID, warp.m_regRF[threadID][m_srcReg[0]], \
@@ -574,14 +580,16 @@ void instruction_c::execute(warp_c &warp, unsigned int threadID) {
         cerr << "JALRS executed by thread %u" << threadID << "at pc: " << hex << warp.m_pc << "\n";
       break;
     case JMPRT:
-      warp.m_nextActiveThreads = 1;
-      warp.m_next_pc = warp.m_pc + warp.m_regRF[threadID][m_srcReg[0]];
-      warp.m_pc_changed = true;
-      DEBUG_PRINTF(("JMPRT r%u[%u](0x%"PRIx64") (pc=0x%"PRIx64" next_pc=0x%"PRIx64")\n", \
-                    m_srcReg[0], threadID, warp.m_regRF[threadID][m_srcReg[0]], \
-                    warp.m_pc, warp.m_next_pc));
-      if(threadID != 0)
-        cerr << "JMPRT executed by thread %u" << threadID << "at pc: " << hex << warp.m_pc << "\n";
+      if (!warp.m_pc_changed) { //is need execution by just first thread
+        warp.m_nextActiveThreads = 1;
+        warp.m_next_pc = warp.m_regRF[threadID][m_srcReg[0]];
+        warp.m_pc_changed = true;
+        DEBUG_PRINTF(("JMPRT r%u[%u](0x%"PRIx64") (pc=0x%"PRIx64" next_pc=0x%"PRIx64")\n", \
+                     m_srcReg[0], threadID, warp.m_regRF[threadID][m_srcReg[0]], \
+                     warp.m_pc, warp.m_next_pc));
+        if(threadID != 0)
+          cerr << "JMPRT executed by thread " << threadID << "at pc: " << hex << warp.m_pc << "\n";
+      }
       break;
     case SPLIT: 
       if (!warp.m_splitJoinOnce) {
