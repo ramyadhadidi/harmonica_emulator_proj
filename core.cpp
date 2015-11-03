@@ -170,12 +170,14 @@ void warp_c::step() {
   }
 
   //PC change
-  if (!m_pc_changed)
-      m_next_pc = m_pc + STEP_PC;
-  //Jump to Same PC (infinite loop :: JMPI -4)
-  if (m_pc == m_next_pc)
-    exec_finish = true;
-  m_pc = m_next_pc;
+  if (m_activeThreads != 0) {  
+    if (!m_pc_changed)
+        m_next_pc = m_pc + STEP_PC;
+    //Jump to Same PC (infinite loop :: JMPI -4)
+    if (m_pc == m_next_pc)
+      exec_finish = true;
+    m_pc = m_next_pc;
+  }
 
   // Active Threads
   if (m_activeThreads != m_nextActiveThreads) {

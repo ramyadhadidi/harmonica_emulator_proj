@@ -27,7 +27,7 @@
 //#define DEBUG_WARP
 
 /** @brief prints core: number of warp changes */
-#define DEBUG_CORE
+//#define DEBUG_CORE
 
 /** @brief Just prints PC **/
 //#define DEBUG_PC
