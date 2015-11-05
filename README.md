@@ -12,6 +12,9 @@ To execute:
 
 `./harp_emulator [binary_file] [output_file]`
 
+##Hot to Configure
+The configuration can be changed in globals.h
+
 ##Clean
 Simply in root do make clean.
 
