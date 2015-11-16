@@ -63,7 +63,10 @@
 #endif
 
 /** @brief save output to the file at argv[2], else to stdout */
-#define OUTPUT_TO_FILE 
+//#define OUTPUT_TO_FILE 
+
+/** @brief save memory trace to the file at argv[3], else to stdout */
+#define MEMORY_OUTPUT
 
 ////////////////////////////////////////////////////////////////
 // Harp Architecture Setting                                  //
@@ -116,5 +119,8 @@ extern bool exec_finish;
 
 /** @brief global output file stream, defined in main.cpp */
 extern std::ofstream output_file;
+
+/** @brief global output memory stream, defined in main.cpp*/
+extern std::ofstream memory_file;
 
 #endif

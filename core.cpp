@@ -159,6 +159,9 @@ void warp_c::step() {
   //Since all jump addresses are same, just one change is enough
   m_pc_changed = false;
 
+  //To check if the current inst is memory refrence or not (for memory trace and coalescing)
+  m_isMemInst = false;
+
   //Exectuion
   for (unsigned int threadId=0; threadId<m_activeThreads; threadId++) {
     /// get instruction binary
@@ -188,5 +191,13 @@ void warp_c::step() {
       exit(1);
     }
   }
+
+  //Memory Trace
+  #ifdef MEMORY_OUTPUT
+  if (m_isMemInst) {
+    memory_file << (m_isWrite ? 'w' : 'r') << "\t" << "0x" << hex << m_memAddr[0] << dec << endl;
+  }
+  #endif
+
   DEBUG_WARP_PRINTF(("\n"));
 }

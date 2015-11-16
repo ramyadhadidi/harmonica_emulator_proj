@@ -31,19 +31,25 @@ using namespace std;
 
 bool exec_finish = false;
 ofstream output_file;
+ofstream memory_file;
 
 int main(int argc, char** argv) {
   //Input Processing
-  if (argc != 3) {
-    cerr << "Usage: ./harp_emulator program output_generated\n" ;
+  if (argc != 4) {
+    cerr << "Usage: ./harp_emulator [program] [screen_out_file] [memory_file]\n" ;
     exit(1);
   }
   string binary_filename = argv[1];
   string output_filename = argv[2];
+  string memroy_filename = argv[3];
 
 
   #ifdef OUTPUT_TO_FILE
     output_file.open(output_filename.c_str());
+  #endif
+
+  #ifdef MEMORY_OUTPUT
+    memory_file.open(memroy_filename.c_str());
   #endif
 
 
@@ -55,6 +61,10 @@ int main(int argc, char** argv) {
 
   #ifdef OUTPUT_TO_FILE
     output_file.close();
+  #endif
+
+  #ifdef MEMORY_OUTPUT
+    memory_file.close();
   #endif
 
   return 0;
