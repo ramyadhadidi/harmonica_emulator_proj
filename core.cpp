@@ -195,7 +195,7 @@ void warp_c::step() {
     }
 
     //Coalescing fucntion
-
+    coalesce();
  
     //Print out memory trace to file
     for (unsigned int i=0; i<m_uniqeCoalMemAddr ; i++)
@@ -217,4 +217,8 @@ void warp_c::step() {
   }
 
   DEBUG_WARP_PRINTF(("\n"));
+}
+
+void warp_c::coalesce() {
+
 }

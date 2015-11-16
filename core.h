@@ -145,6 +145,14 @@ class warp_c {
     void step();
 
   private:
+    /**
+     *  @brief Coalesce memory refrences in a single cache line
+     *  Change class variables m_uniqeCoalMemAddr, m_coalMemAddrSize, m_coalMemAddr
+     *  Based on m_memAddr and CACHE_LINE_IN_BYTE
+     */
+    void coalesce();
+
+  private:
     core_c *m_core;
 
     unsigned int m_warpId;
