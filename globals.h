@@ -20,6 +20,10 @@
 #include <set>
 #include <stack>
 
+////////////////////////////////////////////////////////////////
+// Debug Configuration                                        //
+////////////////////////////////////////////////////////////////
+
 /** @brief Prints instructions debug messages */
 //#define DEBUG
 
@@ -62,11 +66,22 @@
 #define DEBUG_PC_PRINT(X) do {} while (0);
 #endif
 
+////////////////////////////////////////////////////////////////
+// Output Configuration                                       //
+////////////////////////////////////////////////////////////////
+
 /** @brief save output to the file at argv[2], else to stdout */
 //#define OUTPUT_TO_FILE 
 
 /** @brief save memory trace to the file at argv[3], else to stdout */
 #define MEMORY_OUTPUT
+
+////////////////////////////////////////////////////////////////
+// Memory Trace Configuration                                 //
+////////////////////////////////////////////////////////////////
+
+/** @breif Cache line size in bytes, used for coalescing */
+#define CACHE_LINE_IN_BYTE 32
 
 ////////////////////////////////////////////////////////////////
 // Harp Architecture Setting                                  //
@@ -88,6 +103,7 @@
 #define PRED_REG_NUM 8                                        //
 #define SIMD_LANE_NUM 8                                       //
 #define WARP_SIZE 8                                           //
+                                                              //
                                                               //
 ////////////////////////////////////////////////////////////////
 
