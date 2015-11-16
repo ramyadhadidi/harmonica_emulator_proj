@@ -1,0 +1,1 @@
+./dineroIV -l1-dsize 32768 -l1-dbsize 32 -l1-dassoc 4 -l1-dwalloc n -l1-dccc -informat D < testinput

@@ -2,3 +2,6 @@
 *.bin
 bin/*
 harp_emulator
+*.tar.bz2
+*.log
+*status
