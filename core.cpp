@@ -144,7 +144,7 @@ warp_c::warp_c(core_c *core, binReader_c* bin, unsigned int warpId) {
 }
 
 void warp_c::step() {
-  //Debug
+  //Debug**/
   DEBUG_PC_PRINT((m_pc));
   DEBUG_WARP_PRINTF(("||--> WarpID %u: PC 0x%"PRIx64"\n", m_warpId, m_pc));
   DEBUG_WARP_PRINTF(("||--> WarpID %u: # Active Threads %"PRId64"\n", m_warpId, m_activeThreads));
@@ -153,6 +153,7 @@ void warp_c::step() {
     DEBUG_WARP_PRINTF(("%x ", m_threadMask[_threadID]));
   DEBUG_WARP_PRINTF(("\n"));
 
+  /**Initialization**/
   //Reconverge Support: for just pushing and poping one element in stack
   m_splitJoinOnce = false;
 
@@ -162,7 +163,7 @@ void warp_c::step() {
   //To check if the current inst is memory refrence or not (for memory trace and coalescing)
   m_isMemInst = false;
 
-  //Exectuion
+  /**Exectuion**/
   for (unsigned int threadId=0; threadId<m_activeThreads; threadId++) {
     /// get instruction binary
     Word inst_binary = m_bin->get_inst(m_pc);
@@ -172,7 +173,7 @@ void warp_c::step() {
     inst.execute(*this, threadId);
   }
 
-  //PC change
+  /**PC change**/
   if (m_activeThreads != 0) {  
     if (!m_pc_changed)
         m_next_pc = m_pc + STEP_PC;
@@ -182,7 +183,30 @@ void warp_c::step() {
     m_pc = m_next_pc;
   }
 
-  // Active Threads
+
+  /**Memory Trace**/
+  #ifdef MEMORY_OUTPUT
+  if (m_isMemInst) {
+    //Initialize all coalMemAddr to not coalescing mode
+    m_uniqeCoalMemAddr = m_activeThreads;
+    for (unsigned int i=0; i<m_activeThreads; i++) {
+      m_coalMemAddr[i] = m_memAddr[i];
+      m_coalMemAddrSize[i] = WORD_SIZE_IN_BYTE;
+    }
+
+    //Coalescing fucntion
+
+ 
+    //Print out memory trace to file
+    for (unsigned int i=0; i<m_uniqeCoalMemAddr ; i++)
+      memory_file << (m_isWrite ? 'w' : 'r') << "\t" \
+                  << "0x" << hex << m_coalMemAddr[i] << dec << "\t" \
+                  << m_coalMemAddrSize[i] << endl;
+  }
+  #endif
+
+
+  /**Active Threads**/
   if (m_activeThreads != m_nextActiveThreads) {
     DEBUG_WARP_PRINTF(("||--> WarpID %u: #Active Threads changed from %"PRId64" to %"PRId64"\n", m_warpId, m_activeThreads, m_nextActiveThreads));
     m_activeThreads = m_nextActiveThreads;
@@ -191,13 +215,6 @@ void warp_c::step() {
       exit(1);
     }
   }
-
-  //Memory Trace
-  #ifdef MEMORY_OUTPUT
-  if (m_isMemInst) {
-    memory_file << (m_isWrite ? 'w' : 'r') << "\t" << "0x" << hex << m_memAddr[0] << dec << endl;
-  }
-  #endif
 
   DEBUG_WARP_PRINTF(("\n"));
 }
