@@ -249,7 +249,7 @@ void instruction_c::execute(warp_c &warp, unsigned int threadID) {
 
     //Memory
     case ST:
-      memoryAddr = warp.m_regRF[threadID][m_srcReg[1]] + m_srcImm;  
+      memoryAddr = warp.m_regRF[threadID][m_srcReg[1]] + m_srcImm;
       if (memoryAddr == ( (1LL << (INST_SIZE_BITS-1))) ) {
         if (warp.m_warpId == 0 && threadID == 0) {
           #ifdef OUTPUT_TO_FILE
@@ -259,8 +259,12 @@ void instruction_c::execute(warp_c &warp, unsigned int threadID) {
           #endif
         }
       }
-      else 
+      else {
+        warp.m_isWrite = true;
+        warp.m_isMemInst = true;
+        warp.m_memAddr[threadID] = memoryAddr;
         warp.m_bin->write_data(memoryAddr, warp.m_regRF[threadID][m_srcReg[0]]);
+      }
       DEBUG_PRINTF(("ST r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64") 0x%"PRIx64" (Addr:0x%"PRIx64")\n", \
                     m_srcReg[0], threadID, warp.m_regRF[threadID][m_destReg], \
                     m_srcReg[1], threadID, warp.m_regRF[threadID][m_srcReg[0]], \
@@ -268,6 +272,9 @@ void instruction_c::execute(warp_c &warp, unsigned int threadID) {
       break;
     case LD:
       memoryAddr = warp.m_regRF[threadID][m_srcReg[0]] + m_srcImm;
+      warp.m_isWrite = false;
+      warp.m_isMemInst = true;
+      warp.m_memAddr[threadID] = memoryAddr;
       warp.m_regRF[threadID][m_destReg] = warp.m_bin->get_data(memoryAddr);
       DEBUG_PRINTF(("LD r%u[%u](0x%"PRIx64") r%u[%u](0x%"PRIx64") + 0x%"PRIx64" (Addr:0x%"PRIx64")\n", \
                     m_destReg, threadID, warp.m_regRF[threadID][m_destReg], \

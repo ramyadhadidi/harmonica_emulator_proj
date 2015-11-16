@@ -170,6 +170,16 @@ class warp_c {
     /**Reconverge Support**/
     stack <IPDOMStackEntry_t> m_reconvergeStack;
     bool m_splitJoinOnce;
+
+    /**Memory Trace Support**/
+    bool m_isMemInst;
+    bool m_isWrite;
+    Addr m_memAddr[SIMD_LANE_NUM];
+
+    /**Coalescing Support**/
+    Size m_uniqeCoalMemAddr;
+    Addr m_coalMemAddr[SIMD_LANE_NUM];
+    Addr m_coalMemAddrSize[SIMD_LANE_NUM];
 };
 
 #endif
