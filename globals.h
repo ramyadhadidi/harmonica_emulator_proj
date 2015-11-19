@@ -36,6 +36,9 @@
 /** @brief Just prints PC **/
 //#define DEBUG_PC
 
+/** @brief Debug Memory Coalescing **/
+//#define DEBUG_MEMORY
+
 #ifdef DEBUG
 #define DEBUG_PRINT(X) cout << X << endl;
 #define DEBUG_PRINTF(x) printf x;
@@ -71,7 +74,7 @@
 ////////////////////////////////////////////////////////////////
 
 /** @brief save output to the file at argv[2], else to stdout */
-//#define OUTPUT_TO_FILE 
+//#define OUTPUT_TO_FILE
 
 /** @brief save memory trace to the file at argv[3], else to stdout */
 #define MEMORY_OUTPUT

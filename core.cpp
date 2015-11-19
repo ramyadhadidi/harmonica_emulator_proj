@@ -194,14 +194,31 @@ void warp_c::step() {
       m_coalMemAddrSize[i] = WORD_SIZE_IN_BYTE;
     }
 
-    //Coalescing fucntion
-    coalesce();
- 
-    //Print out memory trace to file
+    #ifdef DEBUG_MEMORY
+    memory_file << "Before:\n";
     for (unsigned int i=0; i<m_uniqeCoalMemAddr ; i++)
       memory_file << (m_isWrite ? 'w' : 'r') << "\t" \
                   << "0x" << hex << m_coalMemAddr[i] << dec << "\t" \
                   << m_coalMemAddrSize[i] << endl;
+    #endif
+
+    //Coalescing fucntion
+    coalesce();
+ 
+    //Print out memory trace to file
+    #ifndef DEBUG_MEMORY
+    for (unsigned int i=0; i<m_uniqeCoalMemAddr ; i++)
+      memory_file << (m_isWrite ? 'w' : 'r') << "\t" \
+                  << "0x" << hex << m_coalMemAddr[i] << dec << "\t" \
+                  << m_coalMemAddrSize[i] << endl;
+    #else
+    memory_file << "After:\n";
+    for (unsigned int i=0; i<m_uniqeCoalMemAddr ; i++)
+      memory_file << (m_isWrite ? 'w' : 'r') << "\t" \
+                  << "0x" << hex << m_coalMemAddr[i] << dec << "\t" \
+                  << m_coalMemAddrSize[i] << endl;
+    memory_file << endl;
+    #endif
   }
   #endif
 
@@ -220,5 +237,35 @@ void warp_c::step() {
 }
 
 void warp_c::coalesce() {
+  unsigned maximumDistance = (1LL << CACHE_LINE_IN_BYTE/WORD_SIZE_IN_BYTE) - 1;
+  set<Addr> memAddresses;
+  set<Addr> coalMemAddr;
 
+  for (unsigned int i=0; i<m_uniqeCoalMemAddr ; i++)
+    memAddresses.insert( m_coalMemAddr[i] );
+
+  for (set<Addr>::iterator itA = memAddresses.begin(); itA != memAddresses.end();) {
+    bool coalFound = false;
+    for (set<Addr>::iterator itB = memAddresses.begin(); itB != memAddresses.end();) {
+      if ( (abs(*itB - *itA) < maximumDistance) && (*itB != *itA) ) {
+        coalFound = true;
+        memAddresses.erase(itB++);
+        coalMemAddr.insert(*itA);
+      }
+      else {
+        itB++;
+      }
+    }
+    if (!coalFound)
+      coalMemAddr.insert(*itA);
+    memAddresses.erase(itA++);
+  }
+
+
+  m_uniqeCoalMemAddr = coalMemAddr.size();
+  unsigned int i=0;
+  for (set<Addr>::iterator it = coalMemAddr.begin(); it != coalMemAddr.end(); ++it, ++i)
+    m_coalMemAddr[i] = *it;
+
+  return;
 }
