@@ -11,6 +11,8 @@
 
 #include <iostream>
 #include <vector>
+#include <set>
+#include <cmath>
 #include "globals.h"
 #include "binReader.h"
 
