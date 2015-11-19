@@ -55,7 +55,7 @@ Word binReader_c::get_inst(Addr PC) {
 
   Word output = 0;
   for (int i=0; i<WORD_SIZE_IN_BYTE; i++)
-    output += binary_stream[PC+i] * pow(256, i);
+    output += binary_stream[PC+i] * ( 1LL<<(8*i) );
 
   return output;
 }
@@ -67,7 +67,7 @@ Word binReader_c::get_data(Addr dataAddr) {
 
   Word output = 0;
   for (int i=0; i<WORD_SIZE_IN_BYTE; i++) {
-    output += binary_stream[dataAddr+i] * pow(256, i);
+    output += binary_stream[dataAddr+i] * ( 1LL<<(8*i) );
   }
 
   DEBUG_PRINT("Read Data[" << hex << dataAddr << "] = " << hex << output << dec);
