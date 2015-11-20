@@ -1,0 +1,9 @@
+language: cpp
+before_install:
+script:
+- make
+install:
+compiler:
+- clang
+- gcc
+git:
