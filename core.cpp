@@ -196,17 +196,14 @@ void warp_c::step() {
   if (m_isMemInst) {
     //Initialize all coalMemAddr to not coalescing mode
     m_uniqeCoalMemAddr = m_activeThreads;
-    for (unsigned int i=0; i<m_activeThreads; i++) {
+    for (unsigned int i=0; i<m_activeThreads; i++) 
       m_coalMemAddr[i] = m_memAddr[i];
-      m_coalMemAddrSize[i] = WORD_SIZE_IN_BYTE;
-    }
 
     #ifdef DEBUG_MEMORY
     memory_file << "Before:\n";
     for (unsigned int i=0; i<m_uniqeCoalMemAddr ; i++)
       memory_file << (m_isWrite ? 'w' : 'r') << "\t" \
-                  << "0x" << hex << m_coalMemAddr[i] << dec << "\t" \
-                  << m_coalMemAddrSize[i] << endl;
+                  << "0x" << hex << m_coalMemAddr[i] << dec << "\t" << endl;
     #endif
 
     //Coalescing fucntion
@@ -215,15 +212,13 @@ void warp_c::step() {
     //Print out memory trace to file
     #ifndef DEBUG_MEMORY
     for (unsigned int i=0; i<m_uniqeCoalMemAddr ; i++)
-      memory_file << (m_isWrite ? 'w' : 'r') << "\t" \
-                  << "0x" << hex << m_coalMemAddr[i] << dec << "\t" \
-                  << m_coalMemAddrSize[i] << endl;
+      memory_file << (m_isWrite ? '1' : '0') << "\t" \
+                  << "0x" << hex << m_coalMemAddr[i] << dec << "\t" << endl;
     #else
     memory_file << "After:\n";
     for (unsigned int i=0; i<m_uniqeCoalMemAddr ; i++)
       memory_file << (m_isWrite ? 'w' : 'r') << "\t" \
-                  << "0x" << hex << m_coalMemAddr[i] << dec << "\t" \
-                  << m_coalMemAddrSize[i] << endl;
+                  << "0x" << hex << m_coalMemAddr[i] << dec << "\t" << endl;
     memory_file << endl;
     #endif
   }
@@ -256,7 +251,12 @@ void warp_c::coalesce() {
   for (set<Addr>::iterator itA = memAddresses.begin(); itA != memAddresses.end();) {
     bool coalFound = false;
     for (set<Addr>::iterator itB = memAddresses.begin(); itB != memAddresses.end();) {
-      if ( (abs(*itB - *itA) < maximumDistance) && (*itB != *itA) ) {
+      Addr firstElem = *itA >> RIGHT_BIT_SHIFT_COAL;
+      Addr secondElem = *itB >> RIGHT_BIT_SHIFT_COAL;
+      Addr mask = (1LL << RIGHT_BIT_SHIFT_COAL) - 1;
+      Addr lowerFirstElem = *itA & mask;
+      Addr lowerSecondElem = *itB & mask;
+      if ( (abs(secondElem - firstElem) < maximumDistance) && (*itB != *itA) && (lowerFirstElem == lowerSecondElem) ) {
         coalFound = true;
         memAddresses.erase(itB++);
         coalMemAddr.insert(*itA);
@@ -280,6 +280,7 @@ void warp_c::coalesce() {
 
   //No need to change m_coalMemAddrSize since dinero will again count those new sizes as miss
   //  Check for total bytes from memory verify you coalescing, should be the same
+  //  update: using version d of Dinero for trace reading, no size needed
 
   return;
 }

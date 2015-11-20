@@ -37,7 +37,7 @@
 //#define DEBUG_PC
 
 /** @brief Debug Memory Coalescing **/
-//#define DEBUG_MEMORY
+#define DEBUG_MEMORY
 
 #ifdef DEBUG
 #define DEBUG_PRINT(X) cout << X << endl;
@@ -85,6 +85,7 @@
 
 /** @breif Cache line size in bytes, used for coalescing */
 #define CACHE_LINE_IN_BYTE 32
+#define RIGHT_BIT_SHIFT_COAL 8
 
 ////////////////////////////////////////////////////////////////
 // Harp Architecture Setting                                  //

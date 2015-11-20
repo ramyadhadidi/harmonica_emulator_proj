@@ -154,7 +154,7 @@ class warp_c {
   private:
     /**
      *  @brief Coalesce memory refrences in a single cache line
-     *  Change class variables m_uniqeCoalMemAddr, m_coalMemAddrSize, m_coalMemAddr
+     *  Change class variables m_uniqeCoalMemAddr, m_coalMemAddr
      *  Based on m_memAddr and CACHE_LINE_IN_BYTE
      */
     void coalesce();
@@ -194,7 +194,6 @@ class warp_c {
     /**Coalescing Support**/
     Size m_uniqeCoalMemAddr;
     Addr m_coalMemAddr[SIMD_LANE_NUM];
-    Addr m_coalMemAddrSize[SIMD_LANE_NUM];
 };
 
 #endif
