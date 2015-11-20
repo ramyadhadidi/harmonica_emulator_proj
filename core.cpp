@@ -198,7 +198,6 @@ void warp_c::step() {
     m_uniqeCoalMemAddr = m_activeThreads;
     for (unsigned int i=0; i<m_activeThreads; i++) 
       m_coalMemAddr[i] = m_memAddr[i];
-
     #ifdef DEBUG_MEMORY
     memory_file << "Before:\n";
     for (unsigned int i=0; i<m_uniqeCoalMemAddr ; i++)
@@ -219,7 +218,8 @@ void warp_c::step() {
     for (unsigned int i=0; i<m_uniqeCoalMemAddr ; i++)
       memory_file << (m_isWrite ? 'w' : 'r') << "\t" \
                   << "0x" << hex << m_coalMemAddr[i] << dec << "\t" << endl;
-    memory_file << endl;
+                  << "0x" << hex << m_coalMemAddr[i] << dec << "\t" \
+                  << m_coalMemAddrSize[i] << endl;
     #endif
   }
   #endif
