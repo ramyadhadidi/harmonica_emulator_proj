@@ -104,7 +104,7 @@
 #define WORD_SIZE_IN_BYTE 4                                   //
 #define GPR_REG_NUM 8                                         //
 #define PRED_REG_NUM 8                                        //
-#define SIMD_LANE_NUM 8                                       //
+#define SIMD_LANE_NUM 32                                       //
 #define WARP_SIZE 8                                           //
                                                               //
                                                               //

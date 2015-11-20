@@ -42,6 +42,11 @@ class core_c {
      */
     void step();
 
+    ~core_c();
+
+  public:
+    uint64_t statCoalesced;
+
   private:
     string m_binary_filename;
     binReader_c m_bin;

@@ -12,7 +12,12 @@
 core_c::core_c() 
   : m_binary_filename("")
 {
+  statCoalesced=0;
+}
 
+core_c::~core_c() 
+{
+  cout << "Coalescing # " << statCoalesced << endl;
 }
 
 core_c::core_c(string filename) {
@@ -28,6 +33,8 @@ core_c::core_c(string filename) {
   m_nextActiveWarps = 1;
   m_activeWarpMask[0] = true;
   m_warpSizeChanged = false;
+
+  statCoalesced=0;
 }
 
 void core_c::step() {
@@ -241,9 +248,11 @@ void warp_c::coalesce() {
   set<Addr> memAddresses;
   set<Addr> coalMemAddr;
 
+  //Get inputs
   for (unsigned int i=0; i<m_uniqeCoalMemAddr ; i++)
     memAddresses.insert( m_coalMemAddr[i] );
 
+  //Note: set will not insert duplicate element
   for (set<Addr>::iterator itA = memAddresses.begin(); itA != memAddresses.end();) {
     bool coalFound = false;
     for (set<Addr>::iterator itB = memAddresses.begin(); itB != memAddresses.end();) {
@@ -252,20 +261,25 @@ void warp_c::coalesce() {
         memAddresses.erase(itB++);
         coalMemAddr.insert(*itA);
       }
-      else {
+      else
         itB++;
-      }
     }
+    //Uniqe item itslef, insert it
     if (!coalFound)
       coalMemAddr.insert(*itA);
     memAddresses.erase(itA++);
   }
 
-
+  //Restore outputs
+  int sizeOld = m_uniqeCoalMemAddr;
   m_uniqeCoalMemAddr = coalMemAddr.size();
   unsigned int i=0;
-  for (set<Addr>::iterator it = coalMemAddr.begin(); it != coalMemAddr.end(); ++it, ++i)
+  for (set<Addr>::iterator it = coalMemAddr.begin(); it != coalMemAddr.end(); ++it, ++i) 
     m_coalMemAddr[i] = *it;
+  m_core->statCoalesced += sizeOld-m_uniqeCoalMemAddr;
+
+  //No need to change m_coalMemAddrSize since dinero will again count those new sizes as miss
+  //  Check for total bytes from memory verify you coalescing, should be the same
 
   return;
 }
