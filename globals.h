@@ -77,7 +77,7 @@
 //#define OUTPUT_TO_FILE
 
 /** @brief save memory trace to the file at argv[3], else to stdout */
-#define MEMORY_OUTPUT
+//#define MEMORY_OUTPUT
 
 ////////////////////////////////////////////////////////////////
 // Memory Trace Configuration                                 //
@@ -85,7 +85,7 @@
 
 /** @breif Cache line size in bytes, used for coalescing */
 #define CACHE_LINE_IN_BYTE 32
-#define RIGHT_BIT_SHIFT_COAL 8
+#define RIGHT_BIT_SHIFT_COAL 0
 
 
 ////////////////////////////////////////////////////////////////
