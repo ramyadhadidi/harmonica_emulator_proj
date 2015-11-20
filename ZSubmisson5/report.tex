@@ -1,0 +1,206 @@
+\documentclass{article}
+\pagestyle{plain}
+
+\author{Ramyad Hadidi}
+\date{\today}
+
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{listings}
+\usepackage{color}
+\usepackage{hyperref}
+\usepackage[usenames,dvipsnames]{xcolor}
+
+
+\begin{document}
+
+\definecolor{light-blue}{RGB}{216,208,255}
+\lstset{language=C++, 
+	basicstyle=\fontsize{9}{9}\selectfont\ttfamily,
+        keywordstyle=\color{Blue}\ttfamily,
+        stringstyle=\color{Red}\ttfamily,
+        commentstyle=\color{ForestGreen}\ttfamily,
+        breaklines=true
+	backgroundcolor=\color{light-blue}, 
+	frame=single,
+	numbers=left, 
+	stepnumber=1,
+	numberstyle=\tiny\color{Sepia},
+	morekeywords={}}
+
+	
+\begin{minipage}[t]{1.0\textwidth}
+ \emph{\indent\textbf{Report:} \\
+		   \-\ Memory Coalescing for GPUs \\
+		   \-\ Assignment 5 GPU Architecture Course \\
+		   \-\ Ramyad Hadidi - \today
+  }
+\end{minipage}
+
+\vspace{3 mm}
+\hrule
+\vspace{3 mm}
+
+\section{Introduction}
+In this assignment, trace generation is implemented in previously developed Harmonica ISA emulator \footnote{\url{https://github.com/ramyadhadidi/harmonica_emulator_proj}}. Also, in emulator different mechanisms for memory coalescing is integrated. Therefore, with the help of the emulator a study on memory coalescing effects on cache has been done using Dinero IV\footnote{\url{http://pages.cs.wisc.edu/~markhill/DineroIV/}} a Trace-Driven Uniprocessor Cache Simulator. In this report first we show how memory coalescing code was integrated, then a study about impact of cache line size on cache performance, and finally another study about memory mapping schemes and its impact on cache performance.
+
+The benchmarks that we are using is \emph{small} version of \emph{vecsum} and \emph{scan} applications with 8 threads/warp and 32 threads/warp. For Dinero, we use one level cache with fixed properties except of cache line size in the first study. We have used a 32KB, 4 way set-associative cache with 8 banks;
+
+\section{Developed Code}
+In each execution step, the main class of \emph{core\_c} will call \emph{step()} function, which it will call all warp in the core and execute them. In each warp after executing all threads, if threads encounter ST or LD, they will save their address to variable \emph{m\_coalMemAddr} and the number of them in \emph{m\_uniqeCoalMemAddr}. At the end of the execution of a warp, a \emph{coalesce()} function will be called and address will be coalesced based on global configurations, such as cache line size and mapping scheme. Here is the code:
+\begin{lstlisting}
+void warp_c::coalesce() {
+  unsigned maximumDistance = (1LL << CACHE_LINE_IN_BYTE/WORD_SIZE_IN_BYTE) - 1;
+  set<Addr> memAddresses;
+  set<Addr> coalMemAddr;
+
+  //Get inputs
+  for (unsigned int i=0; i<m_uniqeCoalMemAddr ; i++)
+    memAddresses.insert( m_coalMemAddr[i] );
+
+  //Note: set will not insert duplicate element
+  for (set<Addr>::iterator itA = memAddresses.begin(); itA != memAddresses.end();) {
+    bool coalFound = false;
+    for (set<Addr>::iterator itB = memAddresses.begin(); itB != memAddresses.end();) {
+      Addr firstElem = *itA >> RIGHT_BIT_SHIFT_COAL;
+      Addr secondElem = *itB >> RIGHT_BIT_SHIFT_COAL;
+      Addr mask = (1LL << RIGHT_BIT_SHIFT_COAL) - 1;
+      Addr lowerFirstElem = *itA & mask;
+      Addr lowerSecondElem = *itB & mask;
+      if ( (abs(secondElem - firstElem) < maximumDistance) && (*itB != *itA) && (lowerFirstElem == lowerSecondElem) ) {
+        coalFound = true;
+        memAddresses.erase(itB++);
+        coalMemAddr.insert(*itA);
+      }
+      else {
+        itB++;
+		m_core->statNotCoalesced ++;
+      }
+    }
+    //Uniqe item itslef, insert it
+    if (!coalFound)
+      coalMemAddr.insert(*itA);
+    memAddresses.erase(itA++);
+  }
+
+  //Restore outputs
+  int sizeOld = m_uniqeCoalMemAddr;
+  m_uniqeCoalMemAddr = coalMemAddr.size();
+  unsigned int i=0;
+  for (set<Addr>::iterator it = coalMemAddr.begin(); it != coalMemAddr.end(); ++it, ++i) 
+    m_coalMemAddr[i] = *it;
+  m_core->statCoalesced += sizeOld-m_uniqeCoalMemAddr;
+}
+\end{lstlisting}
+First, the elements of m\_coalMemAddr have been copied to a set. Set is used because it will not allow duplicate elements. Also, set will order the addresses which enable us to write a 2 for loop for coalescing and select the first item as the representative cache line if coalescing criteria passed. In the 2 for loop body we check if the 2 addresses has coalescing ability based on maximum distance (based on cache line size) and also if coalescing is based on higher value bits we check equality of lower bits.
+In addition I have used a statistics to show how many coalescing is occurring versus not coalesced accesses.
+
+% In this report I have modifed MacSim simulator to stall fetch unit on L2 cache misses. Macsim implements memory system using two main class. First class is \verb+dcu_c+ which is a class for each individual cache in the system. This cache, could be L1, L2, L3 or memory controller based on its \verb+mem_level+ variable in its class. To control all memories, MacSim uses \verb+memory_c+ class. Each memory module has a number of queues. The ones I have used are \emph{Input Queue}, in which other units push their request to get processed by that module and \emph{Fill Queue}, in which the answers of other units to this module request is inserted.
+% 
+% In order to stall the fetch unit of a core on L2 misses, I have made a queue from \verb+queue_c+ class and insert the memory requests that result in L2 miss in this queue. When that particular memory unit processes its Fill queue, I check that if each request get a hit in my queue or not. If yes, I will remove that request from the queue. In general, if the queue was empty fetch unit continue on fetching, if the queue is not empty, fetch unit will be stalled.
+
+% Here are the modifications:
+% \begin{lstlisting}
+%   //memory.h
+%   //--class dcu_c private data
+%   queue_c* m_miss_l2_queue;
+%   
+%   //--public fucntion in memory_c class
+%   bool get_in_miss_l2(int core_id);
+%   
+%   //memory.cc
+%   //--constructor dcu_c
+%   m_miss_l2_queue = new queue_c(simBase,1024);
+%   
+%   //--dcu_c::process_in_queue
+%   //----In cache miss
+%   if (m_level == MEM_L2) {
+%     in_miss_l2 = true;
+%     m_miss_l2_queue->push(req);
+%   }
+%   
+%   //--dcu_c::process_fill_queue
+%   if (m_level == MEM_L2) {
+%     if (m_miss_l2_queue->search(req)) {
+% 	m_miss_l2_queue->pop(req);
+%     }
+%     if (m_miss_l2_queue->empty())
+%       in_miss_l2 = false;
+%    }
+%    
+%    //--public fucntion in class memory_c
+%    bool memory_c::get_in_miss_l2(int core_id) {
+%     return m_l2_cache[core_id]->in_miss_l2;
+%   }
+%   
+%   //frontend.cc
+%   //--frontend_c::run_a_cycle
+%   m_fe_stall= m_simBase->m_memory->get_in_miss_l2(m_core_id);
+% \end{lstlisting}
+% 
+% For a single CPU configuration a stall for fetch unit will result in performance degradation. Figure \ref{cpi-1cpu} shows normalized CPI increment with respect to the standard system for spec06 benchmarks on a single CPU. The average degradation is 1.15\%. The experiment is done for 20M instructions. In figure \ref{perc-1cpu} the percentage of stalled fetch stage to total number of cycles due to the L2 miss is shown.
+% 
+% \begin{figure}[h!]
+%   \centering
+%   \includegraphics[width=1.0\textwidth]{spec06.png}
+%   \caption{Normalized CPI Degradation ($\frac{\text{CPI}_\text{Stall}}{\text{CPI}_0}-1$)}
+%   \label{cpi-1cpu}
+% \end{figure}
+% 
+% \begin{figure}[h!]
+%   \centering
+%   \includegraphics[width=1.0\textwidth]{spec06_perc.png}
+%   \caption{The percentage of stalled fetch cycles to total number of cycles due to the L2 miss (\%)}
+%   \label{perc-1cpu}
+% \end{figure}
+% 
+% Second configuration is with one CPU and one GPU. GPU does not have L2, and its bypasses its L2 based on simulator configuration. I ran different mixes of memory intensive benchmarks. Each trace will repeat if the other core is still computing its trace. Figure \ref{cpu_mix1} shoes CPU degradation for CPUs. As it can be there is correlation between what trace is running on CPU with the degradation. Sphinx3 mixes have always larger degradation than others. Finally, average performance degradation is 1.3\%. Figure \ref{cpu_mix1_stall} shows the percentage of stalled fetch cycles to total number of cycles in CPU due to L2 miss.
+% 
+% Figure \ref{gpu_mix1} shows IPC degradation for GPUs. Positive values means negative impact on the performance. Therefore, some mixes have shown improvements. In total, we have a performance improvement of 0.01\%. Since GPU does not have L2, these variations can be accounted with inaccuracy in the simulator.
+% 
+% \begin{figure}[h!]
+%   \centering
+%   \includegraphics[width=1.0\textwidth]{cpu_mix.png}
+%   \caption{Normalized CPI Degradation ($\frac{\text{CPI}_\text{Stall}}{\text{CPI}_0}-1$)}
+%   \label{cpu_mix1}
+% \end{figure}
+% 
+% \begin{figure}[h!]
+%   \centering
+%   \includegraphics[width=1.0\textwidth]{gpu_mix.png}
+%   \caption{Normalized IPC Degradation ($1-\frac{\text{IPC}_\text{Stall}}{\text{IPC}_0}$)}
+%   \label{gpu_mix1}
+% \end{figure}
+% 
+% \begin{figure}[h!]
+%   \centering
+%   \includegraphics[width=1.0\textwidth]{cpu_mix_stall.png}
+%   \caption{The percentage of stalled fetch cycles to total number of cycles due to the L2 miss in CPU (\%)}
+%   \label{cpu_mix1_stall}
+% \end{figure}
+
+
+
+% \begin{table}
+% \centering
+% \begin{tabular}{ c | l }
+%   Parameter & Value // [0.5ex] 
+%   \hline \hline
+%   Number of Leader Sets & 64 //
+%   RRVP bits & 2 bits//
+%   Dueling Counter bits & 4 bits //
+%   Bimodal Insertion Probability & 3.1\% //
+%   Number of SHCT entries & $16\times1024$ //
+%   Number of Signature bits & 14 bits //
+%   SHCT counter bits & 3 bits //
+% \end{tabular}
+% \caption{Parameters for SHiP-PC \& DRRIP}
+% \label{defines}
+% \end{table}
+
+
+\clearpage
+
+%\bibliographystyle{plain}
+%\bibliography{refrences}
+\end{document}

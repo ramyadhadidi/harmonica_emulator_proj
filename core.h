@@ -46,6 +46,7 @@ class core_c {
 
   public:
     uint64_t statCoalesced;
+    uint64_t statNotCoalesced;
 
   private:
     string m_binary_filename;

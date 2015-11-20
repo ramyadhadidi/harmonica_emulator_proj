@@ -13,11 +13,13 @@ core_c::core_c()
   : m_binary_filename("")
 {
   statCoalesced=0;
+  statNotCoalesced=0;
 }
 
 core_c::~core_c() 
 {
   cout << "Coalescing # " << statCoalesced << endl;
+  cout << "Not Coalescing # " << statNotCoalesced << endl;
 }
 
 core_c::core_c(string filename) {
@@ -261,8 +263,10 @@ void warp_c::coalesce() {
         memAddresses.erase(itB++);
         coalMemAddr.insert(*itA);
       }
-      else
+      else {
         itB++;
+        m_core->statNotCoalesced++;
+      }
     }
     //Uniqe item itslef, insert it
     if (!coalFound)
